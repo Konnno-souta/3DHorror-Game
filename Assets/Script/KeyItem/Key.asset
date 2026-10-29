@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc8e64c10c85a0848b8869ed3986b226, type: 3}
+  m_Name: Key
+  m_EditorClassIdentifier: Assembly-CSharp::ItemDatabase
+  allItems:
+  - itemName: "\u9375"
+    description: "\u4F55\u304B\u306B\u4F7F\u3048\u305D\u3046\u306A\u9375\u3060\u2026"
+    icon: {fileID: 21300000, guid: a526d2ea5da586943910c80d6af109c8, type: 3}
+    displayPrefab: {fileID: 6202248377633566000, guid: 609cad5eb478dd849beaf2705286bdf7, type: 3}
+    itemTag: Key
+    itemType: 1
+    healAmount: 20
+    unlocksFlashlight: 0
