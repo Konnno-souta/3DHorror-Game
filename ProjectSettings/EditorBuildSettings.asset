@@ -9,8 +9,8 @@ EditorBuildSettings:
     path: Assets/Scenes/Titlle.unity
     guid: 94f0bfa2fa6f88d43aff074b4c438364
   - enabled: 1
-    path: Assets/Scenes/Sub.unity
-    guid: 2623d86127bd3304daecd92fb77ab298
+    path: Assets/Scenes/MainScene.unity
+    guid: b9ed15ac61d601d4cad71853fdbefbaa
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
