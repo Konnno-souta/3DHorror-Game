@@ -150,8 +150,12 @@ public class InventorySlotUI :
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (eventData.button != PointerEventData.InputButton.Left) return;
         if (currentItem == null || inventoryUI == null) return;
 
         inventoryUI.SelectSlot(this, currentItem);
+
+        // 左クリックでそのまま使用する（回復薬・電池などはここで消費される）
+        inventoryUI.UseSelectedItem();
     }
 }

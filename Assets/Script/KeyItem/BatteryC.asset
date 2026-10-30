@@ -18,3 +18,7 @@ MonoBehaviour:
     icon: {fileID: 21300000, guid: d15102e1826bf5b428bb87eb66a9daef, type: 3}
     displayPrefab: {fileID: 3019161775642865684, guid: 2d6867d6e54753f449d2768e3269e3a9, type: 3}
     itemTag: BatteryC
+    itemType: 4
+    healAmount: 20
+    batteryRechargePercent: 25
+    unlocksFlashlight: 0

@@ -9,6 +9,7 @@ public enum ItemType
     Key,        // 扉などの鍵として使う（itemTagが扉のRequired Key Tagと照合される）
     Document,   // メモ・手紙（読むだけ、消費されない）
     Tool,       // 懐中電灯などの装備系（インベントリからの「使用」はしない）
+    Battery,    // 懐中電灯の電池を回復する（バッテリー(大)/(小)など）
     Misc        // その他
 }
 
@@ -41,6 +42,9 @@ public class ItemData
     [Header("使用効果")]
     [Tooltip("ItemType = Consumable の時、使用すると回復するHP量")]
     public int healAmount = 20;
+
+    [Tooltip("ItemType = Battery の時、使用すると回復する懐中電灯の電池量（％、最大電池量に対する割合）")]
+    public float batteryRechargePercent = 50f;
 
     [Header("特殊効果")]
     [Tooltip("このアイテムを拾うと、懐中電灯が使用可能になる")]

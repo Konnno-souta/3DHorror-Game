@@ -1,9 +1,14 @@
 using UnityEngine;
+using TMPro;
 
 public class ItemPickup : MonoBehaviour
 {
     [Header("アイテム図鑑への参照")]
     [SerializeField] private ItemDatabase itemDatabase;
+
+    [Header("近づいた時のプロンプトUI（任意）")]
+    [SerializeField] private GameObject promptUI;
+    [SerializeField] private TMP_Text promptText;
 
     private ItemData itemData;
     private bool isNear;
@@ -31,6 +36,11 @@ public class ItemPickup : MonoBehaviour
     {
         inventoryUI = FindObjectOfType<InventoryUI>();
         cameraFollow = FindObjectOfType<HorrorCameraFollow>();
+
+        if (promptUI != null)
+        {
+            promptUI.SetActive(false);
+        }
     }
 
     void Update()
@@ -44,6 +54,7 @@ public class ItemPickup : MonoBehaviour
             }
 
             isShowing = true;
+            HidePrompt();
             inventoryUI.OpenPickupUI(this, itemData);
         }
     }
@@ -64,17 +75,51 @@ public class ItemPickup : MonoBehaviour
     public void CancelPickup()
     {
         isShowing = false;
+
+        // キャンセルした場合、まだ近くにいるならプロンプトを出し直す
+        if (isNear)
+        {
+            ShowPrompt();
+        }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
-            isNear = true;
+        if (!other.CompareTag("Player")) return;
+
+        isNear = true;
+
+        if (!isShowing)
+        {
+            ShowPrompt();
+        }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Player"))
-            isNear = false;
+        if (!other.CompareTag("Player")) return;
+
+        isNear = false;
+        HidePrompt();
+    }
+
+    private void ShowPrompt()
+    {
+        if (promptUI == null) return;
+
+        if (promptText != null && itemData != null)
+        {
+            promptText.text = $"{itemData.itemName}を拾う（Eキー）";
+        }
+
+        promptUI.SetActive(true);
+    }
+
+    private void HidePrompt()
+    {
+        if (promptUI != null)
+        {
+            promptUI.SetActive(false);
+        }
     }
 }

@@ -47,6 +47,9 @@ public class InventoryUI : MonoBehaviour
     [Header("プレイヤー体力（回復アイテム用、任意・未設定なら自動検索）")]
     [SerializeField] private PlayerHealth playerHealth;
 
+    [Header("懐中電灯（電池アイテム用、任意・未設定なら自動検索）")]
+    [SerializeField] private HorrorCameraFollow flashlightController;
+
     [Header("3D表示 回転設定")]
     [SerializeField] private float displayRotateSpeed = 30f;
     [SerializeField] private string displayLayerName = "ItemDisplay";
@@ -88,6 +91,11 @@ public class InventoryUI : MonoBehaviour
         if (playerHealth == null)
         {
             playerHealth = FindObjectOfType<PlayerHealth>();
+        }
+
+        if (flashlightController == null)
+        {
+            flashlightController = FindObjectOfType<HorrorCameraFollow>();
         }
 
         if (itemDisplayCamera != null)
@@ -345,6 +353,10 @@ public class InventoryUI : MonoBehaviour
                 UseConsumable(selectedItem);
                 break;
 
+            case ItemType.Battery:
+                UseBattery(selectedItem);
+                break;
+
             case ItemType.Key:
                 Debug.Log($"'{selectedItem.itemName}' は鍵のかかった扉の前で使ってください。");
                 break;
@@ -373,6 +385,21 @@ public class InventoryUI : MonoBehaviour
         else
         {
             Debug.LogWarning("PlayerHealth が見つからないため、回復処理を行えません。");
+        }
+
+        RemoveItem(item);
+    }
+
+    private void UseBattery(ItemData item)
+    {
+        if (flashlightController != null)
+        {
+            flashlightController.RechargeBatteryByPercent(item.batteryRechargePercent);
+            Debug.Log($"'{item.itemName}' を使用した。懐中電灯の電池を{item.batteryRechargePercent}%回復。");
+        }
+        else
+        {
+            Debug.LogWarning("HorrorCameraFollow が見つからないため、電池の回復処理を行えません。");
         }
 
         RemoveItem(item);
