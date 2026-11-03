@@ -72,6 +72,9 @@ public class HorrorPlayerController : MonoBehaviour
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
 
+    // スタミナ切れ（走れない）状態かどうか。UI表示用
+    public bool IsExhausted => isExhausted;
+
     // ダッシュ中かどうか
     public bool IsRunning { get; private set; }
     void Start()

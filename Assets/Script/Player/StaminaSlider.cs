@@ -24,19 +24,62 @@ public class StaminaSlider : MonoBehaviour
     [Header("フェード速度")]
     [SerializeField] private float fadeSpeed = 3f;
 
+    [Header("色")]
+    [SerializeField] private Color greenColor = new Color(0.55f, 0.85f, 0.35f);
+    [SerializeField] private Color yellowColor = new Color(0.95f, 0.78f, 0.2f);
+    [SerializeField] private Color orangeColor = new Color(0.95f, 0.5f, 0.15f);
+    [SerializeField] private Color redColor = new Color(0.9f, 0.2f, 0.18f);
+
+    [Header("新しい枠（Stamina_Bar_Frame）に合わせる")]
+    [Tooltip("ONにすると、Fill Area を Frame 画像(1024x128)の内側ぴったりに自動配置する")]
+    [SerializeField] private bool autoFitToFrame = true;
+    [SerializeField] private float innerLeft = 36f;
+    [SerializeField] private float innerRight = 988f;
+    [SerializeField] private float innerBottom = 44f;
+    [SerializeField] private float innerTop = 84f;
+
+    private const float FrameWidth = 1024f;
+    private const float FrameHeight = 128f;
+
     private float hideTimer = 0f;
 
     void Start()
     {
-        staminaSlider.maxValue = player.MaxStamina; 
+        staminaSlider.maxValue = player.MaxStamina;
         displayStamina = player.CurrentStamina;
         staminaSlider.value = player.CurrentStamina;
 
         // FillのImage取得
         fillImage = staminaSlider.fillRect.GetComponent<Image>();
 
+        if (autoFitToFrame)
+        {
+            FitFillToFrame();
+        }
+
         staminaUI.alpha = 0f;
         staminaUI.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Fill Area を枠の内側に合わせ、Fill自体の余白（Sliderの初期値は幅10の余白がある）をゼロにする。
+    /// </summary>
+    private void FitFillToFrame()
+    {
+        RectTransform fillRect = staminaSlider.fillRect;
+        RectTransform fillArea = fillRect.parent as RectTransform;
+
+        if (fillArea != null && fillArea != staminaSlider.transform)
+        {
+            fillArea.anchorMin = new Vector2(innerLeft / FrameWidth, innerBottom / FrameHeight);
+            fillArea.anchorMax = new Vector2(innerRight / FrameWidth, innerTop / FrameHeight);
+            fillArea.offsetMin = Vector2.zero;
+            fillArea.offsetMax = Vector2.zero;
+        }
+
+        // Sliderは anchor だけを動かすので、offset をゼロにして幅が正確に比例するようにする
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
     }
 
     void Update()
@@ -60,19 +103,21 @@ public class StaminaSlider : MonoBehaviour
         {
             // 赤 + 点滅
             float blink = Mathf.PingPong(Time.time * 5f, 1f);
-            fillImage.color = new Color(1f, 0f, 0f, blink);
+            Color c = redColor;
+            c.a = blink;
+            fillImage.color = c;
         }
         else if (currentStamina <= 30)
         {
-            fillImage.color = new Color(1f, 0.5f, 0f); // オレンジ
+            fillImage.color = orangeColor;
         }
         else if (currentStamina <= 40)
         {
-            fillImage.color = Color.yellow;
+            fillImage.color = yellowColor;
         }
         else
         {
-            fillImage.color = Color.green;
+            fillImage.color = greenColor;
         }
 
 
