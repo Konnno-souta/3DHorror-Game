@@ -4302,7 +4302,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66e940cde7ea2604199422b70914db8f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HorrorPlayerController
-  walkSpeed: 3
+  walkSpeed: 4
   runSpeed: 5
   normalRunSpeed: 6
   yellowRunSpeed: 5
@@ -16454,6 +16454,8 @@ MonoBehaviour:
   fovSpeed: 7
   isFlashlightUnlocked: 0
   CanLook: 1
+  focusTurnSpeed: 5
+  focusFOV: 42
   maxBattery: 100
   batteryDrainPerSecond: 2
   lowBatteryPercent: 25
@@ -31582,7 +31584,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3846824949152579431, guid: 2d6867d6e54753f449d2768e3269e3a9, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -43.60694
+      value: -37.56
       objectReference: {fileID: 0}
     - target: {fileID: 3846824949152579431, guid: 2d6867d6e54753f449d2768e3269e3a9, type: 3}
       propertyPath: m_LocalPosition.y
@@ -31590,7 +31592,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3846824949152579431, guid: 2d6867d6e54753f449d2768e3269e3a9, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -71.3392
+      value: -71.277
       objectReference: {fileID: 0}
     - target: {fileID: 3846824949152579431, guid: 2d6867d6e54753f449d2768e3269e3a9, type: 3}
       propertyPath: m_LocalRotation.w
@@ -31951,7 +31953,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2498504952586042402, guid: 5dd5a1ab6047d4848b7668734815016f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -42.48394
+      value: -36.391
       objectReference: {fileID: 0}
     - target: {fileID: 2498504952586042402, guid: 5dd5a1ab6047d4848b7668734815016f, type: 3}
       propertyPath: m_LocalPosition.y
@@ -31959,7 +31961,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2498504952586042402, guid: 5dd5a1ab6047d4848b7668734815016f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -69.8732
+      value: -69.787
       objectReference: {fileID: 0}
     - target: {fileID: 2498504952586042402, guid: 5dd5a1ab6047d4848b7668734815016f, type: 3}
       propertyPath: m_LocalRotation.w
@@ -37083,6 +37085,18 @@ MonoBehaviour:
   attackRange: 1.8
   attackCooldown: 1.5
   attackDamage: 10
+  useCatchSequence: 1
+  freezeDuration: 0.4
+  slowMotionScale: 0.15
+  slowMotionDuration: 4
+  syncToAttackAnimation: 1
+  gameOverAtNormalizedTime: 0.7
+  gameOverExtraDelay: 0.35
+  focusHeight: 1.4
+  killPlayerOnCatch: 1
+  onCatchFinished:
+    m_PersistentCalls:
+      m_Calls: []
   maxHealth: 100
 --- !u!195 &1048358351
 NavMeshAgent:
@@ -41427,7 +41441,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1164603166913248891, guid: 8809bf6169090444b94e702fbc61c496, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -43.05994
+      value: -37.024
       objectReference: {fileID: 0}
     - target: {fileID: 1164603166913248891, guid: 8809bf6169090444b94e702fbc61c496, type: 3}
       propertyPath: m_LocalPosition.y
@@ -41435,7 +41449,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1164603166913248891, guid: 8809bf6169090444b94e702fbc61c496, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -70.502205
+      value: -70.448
       objectReference: {fileID: 0}
     - target: {fileID: 1164603166913248891, guid: 8809bf6169090444b94e702fbc61c496, type: 3}
       propertyPath: m_LocalRotation.w
@@ -72876,15 +72890,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3150861369057011422, guid: 2a36a793f68c2d64f83c9747a68c1a58, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -44.140938
+      value: -38.342
       objectReference: {fileID: 0}
     - target: {fileID: 3150861369057011422, guid: 2a36a793f68c2d64f83c9747a68c1a58, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.776
+      value: 1.78
       objectReference: {fileID: 0}
     - target: {fileID: 3150861369057011422, guid: 2a36a793f68c2d64f83c9747a68c1a58, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -72.6892
+      value: -72.299
       objectReference: {fileID: 0}
     - target: {fileID: 3150861369057011422, guid: 2a36a793f68c2d64f83c9747a68c1a58, type: 3}
       propertyPath: m_LocalRotation.w

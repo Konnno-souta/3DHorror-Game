@@ -1,5 +1,7 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Events;
 
 /// <summary>
 /// Cursed Toy: Shadowlop 用の敵AIスクリプト
@@ -39,6 +41,28 @@ public class ShadowlopEnemyAI : MonoBehaviour
     [SerializeField] private float attackCooldown = 1.5f;
     [SerializeField] private int attackDamage = 10;
 
+    [Header("Catch Sequence（捕まった時の演出）")]
+    [Tooltip("ONにすると、攻撃範囲に入った時に「一時停止→スローモーションで攻撃アニメ」を流す")]
+    [SerializeField] private bool useCatchSequence = true;
+    [Tooltip("最初の完全停止の長さ（秒・実時間）")]
+    [SerializeField] private float freezeDuration = 0.4f;
+    [Tooltip("スローモーションの速さ（0.1で10分の1）")]
+    [SerializeField, Range(0.02f, 1f)] private float slowMotionScale = 0.15f;
+    [Tooltip("スローモーションの最大の長さ（秒・実時間）。アニメが進まない場合の保険。ATTACKアニメの長さより少し長めに")]
+    [SerializeField] private float slowMotionDuration = 4.0f;
+    [Tooltip("ONなら、攻撃アニメの進み具合で「ちょうどいいタイミング」を決める。OFFなら Slow Motion Duration の時間ぴったりで終わる")]
+    [SerializeField] private bool syncToAttackAnimation = true;
+    [Tooltip("攻撃アニメがどこまで進んだらゲームオーバーにするか（0?1）。攻撃が当たる瞬間あたりに合わせる。0.6?0.8が目安")]
+    [SerializeField, Range(0.1f, 1f)] private float gameOverAtNormalizedTime = 0.7f;
+    [Tooltip("攻撃が当たった瞬間から、ゲームオーバー画面を出すまでの間（秒・実時間）。余韻用")]
+    [SerializeField] private float gameOverExtraDelay = 0.35f;
+    [Tooltip("カメラが向く敵の高さ（敵の足元からのm）")]
+    [SerializeField] private float focusHeight = 1.4f;
+    [Tooltip("ONなら捕まった＝即ゲームオーバー。OFFなら attackDamage を受けて操作が戻る")]
+    [SerializeField] private bool killPlayerOnCatch = true;
+    [Tooltip("演出が終わった時に呼ぶ（ゲームオーバー画面を出す等。GameOverPanel.SetActive(true) を登録）")]
+    [SerializeField] private UnityEvent onCatchFinished;
+
     [Header("Health")]
     [SerializeField] private int maxHealth = 100;
 
@@ -52,6 +76,9 @@ public class ShadowlopEnemyAI : MonoBehaviour
     private float stateTimer = 0f;
     private float lastAttackTime = -999f;
 
+    private bool isCatching = false;
+    private float defaultFixedDeltaTime;
+
     private static readonly int HashIsWalking = Animator.StringToHash("isWalking");
     private static readonly int HashIsChasing = Animator.StringToHash("isChasing");
     private static readonly int HashIsAttacking = Animator.StringToHash("isAttacking");
@@ -63,6 +90,7 @@ public class ShadowlopEnemyAI : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
         currentHealth = maxHealth;
+        defaultFixedDeltaTime = Time.fixedDeltaTime;
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null) player = playerObj.transform;
@@ -181,6 +209,16 @@ public class ShadowlopEnemyAI : MonoBehaviour
     {
         if (player == null) { ChangeState(State.Patrol); return; }
 
+        // 捕獲演出中は、プレイヤーの方を向くだけ（再追跡・再攻撃はしない）
+        if (isCatching)
+        {
+            Vector3 d = player.position - transform.position;
+            d.y = 0;
+            if (d.sqrMagnitude > 0.001f)
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(d), Time.unscaledDeltaTime * 8f);
+            return;
+        }
+
         float dist = Vector3.Distance(transform.position, player.position);
 
         // 範囲外に出たら再追跡
@@ -205,8 +243,113 @@ public class ShadowlopEnemyAI : MonoBehaviour
 
     void PerformAttack()
     {
+        // 捕まった瞬間：一時停止 → スローモーションで攻撃アニメ
+        if (useCatchSequence)
+        {
+            if (!isCatching) StartCoroutine(CatchSequence());
+            return;
+        }
+
         animator.SetTrigger(HashIsAttacking);
         // ダメージ処理はAnimation Event経由で呼ぶのが望ましい（下記 DealDamageEvent 参照）
+    }
+
+    // ---------------- 捕獲演出 ----------------
+    IEnumerator CatchSequence()
+    {
+        isCatching = true;
+
+        // プレイヤーの操作を止める
+        var playerMove = player.GetComponent<HorrorPlayerController>();
+        if (playerMove != null) playerMove.enabled = false;
+
+        // カメラを敵の方へ向ける
+        var cam = FindObjectOfType<HorrorCameraFollow>();
+        if (cam != null) cam.BeginFocus(transform, Vector3.up * focusHeight);
+
+        // 1. 一時停止
+        SetTimeScale(0f);
+        yield return new WaitForSecondsRealtime(freezeDuration);
+
+        // 2. スローモーションで攻撃アニメーション
+        SetTimeScale(slowMotionScale);
+
+        int stateBefore = animator.GetCurrentAnimatorStateInfo(0).fullPathHash;
+        animator.SetTrigger(HashIsAttacking);
+
+        if (syncToAttackAnimation)
+        {
+            float elapsed = 0f;
+
+            // (a) 攻撃アニメの状態に切り替わるのを待つ
+            while (elapsed < slowMotionDuration)
+            {
+                AnimatorStateInfo st = animator.GetCurrentAnimatorStateInfo(0);
+                if (!animator.IsInTransition(0) && st.fullPathHash != stateBefore) break;
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            // (b) 攻撃アニメが指定の進み具合に達するまで、スローのまま流す
+            while (elapsed < slowMotionDuration)
+            {
+                AnimatorStateInfo st = animator.GetCurrentAnimatorStateInfo(0);
+                if (st.normalizedTime >= gameOverAtNormalizedTime) break;
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            // (c) 当たった瞬間の余韻（スローのまま）
+            yield return new WaitForSecondsRealtime(gameOverExtraDelay);
+        }
+        else
+        {
+            yield return new WaitForSecondsRealtime(slowMotionDuration);
+        }
+
+        // 3. 通常速度へ戻す
+        SetTimeScale(1f);
+
+        // 4. ダメージ処理
+        var health = player.GetComponent<IDamageable>();
+        if (killPlayerOnCatch)
+        {
+            health?.TakeDamage(99999);
+
+            // ゲームオーバー画面を操作できるようにカーソルを出す
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            onCatchFinished?.Invoke();
+            // isCatching は true のまま（二度と攻撃・再追跡はしない）
+        }
+        else
+        {
+            health?.TakeDamage(attackDamage);
+
+            if (playerMove != null) playerMove.enabled = true;
+            if (cam != null) cam.EndFocus();
+
+            lastAttackTime = Time.time;
+            isCatching = false;
+            onCatchFinished?.Invoke();
+        }
+    }
+
+    void SetTimeScale(float scale)
+    {
+        Time.timeScale = scale;
+        // 物理の更新間隔もスケールに合わせる（0のときは更新されないので何でもよい）
+        Time.fixedDeltaTime = defaultFixedDeltaTime * Mathf.Max(scale, 0.02f);
+    }
+
+    void OnDestroy()
+    {
+        // 演出中に敵が消えても、時間が止まったままにならないようにする
+        if (isCatching && Time.timeScale != 1f)
+        {
+            SetTimeScale(1f);
+        }
     }
 
     /// <summary>
@@ -215,6 +358,7 @@ public class ShadowlopEnemyAI : MonoBehaviour
     public void DealDamageEvent()
     {
         if (player == null) return;
+        if (isCatching) return; // 捕獲演出中のダメージは演出側でまとめて与える
         float dist = Vector3.Distance(transform.position, player.position);
         if (dist <= attackRange)
         {
@@ -319,14 +463,14 @@ public class ShadowlopEnemyAI : MonoBehaviour
 
         if (dist > sightRange)
         {
-            //if (debugTick) Debug.Log($"[Shadowlop] 検知失敗: 距離オーバー dist={dist:F1} > sightRange={sightRange}");
+            if (debugTick) Debug.Log($"[Shadowlop] 検知失敗: 距離オーバー dist={dist:F1} > sightRange={sightRange}");
             return false;
         }
 
         float angle = Vector3.Angle(transform.forward, toPlayer);
         if (angle > sightAngle * 0.5f)
         {
-            //if (debugTick) Debug.Log($"[Shadowlop] 検知失敗: 視野角外 angle={angle:F1} > {sightAngle * 0.5f}");
+            if (debugTick) Debug.Log($"[Shadowlop] 検知失敗: 視野角外 angle={angle:F1} > {sightAngle * 0.5f}");
             return false;
         }
 
@@ -335,11 +479,11 @@ public class ShadowlopEnemyAI : MonoBehaviour
         float raycastDist = Mathf.Max(0.1f, dist - 0.5f);
         if (Physics.Raycast(transform.position + Vector3.up * 1.5f, toPlayer.normalized, out RaycastHit hit, raycastDist, obstacleMask))
         {
-            //if (debugTick) Debug.Log($"[Shadowlop] 検知失敗: 障害物に遮られている hit={hit.collider.name}");
+            if (debugTick) Debug.Log($"[Shadowlop] 検知失敗: 障害物に遮られている hit={hit.collider.name}");
             return false; // 何かに遮られている
         }
 
-        //if (debugTick) Debug.Log($"[Shadowlop] 検知成功: dist={dist:F1}, angle={angle:F1}");
+        if (debugTick) Debug.Log($"[Shadowlop] 検知成功: dist={dist:F1}, angle={angle:F1}");
         return true;
     }
 

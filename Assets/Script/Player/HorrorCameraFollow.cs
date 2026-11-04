@@ -52,6 +52,47 @@ public class HorrorCameraFollow : MonoBehaviour
     public bool CanLook = true;
     public bool IsFlashlightUnlocked => isFlashlightUnlocked;
 
+    [Header("敵に捕まった時のカメラ演出")]
+    [SerializeField] private float focusTurnSpeed = 5f;
+    [SerializeField] private float focusFOV = 42f;
+
+    private Transform focusTarget;
+    private Vector3 focusOffset;
+
+    /// <summary>
+    /// 敵に捕まった時など、カメラを指定の対象へ向けて操作を奪う。
+    /// </summary>
+    public void BeginFocus(Transform targetTransform, Vector3 offset)
+    {
+        focusTarget = targetTransform;
+        focusOffset = offset;
+    }
+
+    /// <summary>
+    /// 演出を終わらせて、通常の視点操作に戻す。
+    /// </summary>
+    public void EndFocus()
+    {
+        focusTarget = null;
+
+        // 現在の向きから、通常の視点操作を引き継ぐ
+        yRotation = transform.eulerAngles.y;
+        xRotation = Mathf.Clamp(Mathf.DeltaAngle(0f, transform.eulerAngles.x), minXRotation, maxXRotation);
+    }
+
+    private void FocusLook()
+    {
+        Vector3 dir = (focusTarget.position + focusOffset) - transform.position;
+        if (dir.sqrMagnitude < 0.0001f) return;
+
+        // タイムスケールが0やスローでも、同じ速さで向く
+        Quaternion want = Quaternion.LookRotation(dir);
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            want,
+            1f - Mathf.Exp(-focusTurnSpeed * Time.unscaledDeltaTime));
+    }
+
     [Header("懐中電灯 電池")]
     [SerializeField] private float maxBattery = 100f;
     [Tooltip("点灯中、1秒あたりに減る電池量")]
@@ -112,8 +153,15 @@ public class HorrorCameraFollow : MonoBehaviour
         if (target == null)
             return;
 
-        // 視点回転
-        MouseLook();
+        // 視点回転（敵に捕まっている間は、敵の方を向く）
+        if (focusTarget != null)
+        {
+            FocusLook();
+        }
+        else
+        {
+            MouseLook();
+        }
 
         // プレイヤー追従
         Follow();
@@ -278,7 +326,7 @@ public class HorrorCameraFollow : MonoBehaviour
             return;
         }
 
-        // 残量が少ないほど、明滅が速く・激しくなる
+        // 残量が少ないほど、明滅が速く激しくなる
         float lowness = Mathf.InverseLerp(lowBatteryPercent, 0f, percent); // 0から1
         bool isCritical = percent <= criticalBatteryPercent;
 
@@ -371,9 +419,15 @@ public class HorrorCameraFollow : MonoBehaviour
             targetFOV = redFOV;
         }
 
+        // 敵に捕まっている間は少し寄る
+        if (focusTarget != null)
+        {
+            targetFOV = focusFOV;
+        }
+
         playerCamera.fieldOfView = Mathf.Lerp(
             playerCamera.fieldOfView,
             targetFOV,
-            fovSpeed * Time.deltaTime);
+            fovSpeed * Time.unscaledDeltaTime);
     }
 }
