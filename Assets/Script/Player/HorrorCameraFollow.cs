@@ -55,8 +55,13 @@ public class HorrorCameraFollow : MonoBehaviour
     [Header("敵に捕まった時のカメラ演出")]
     [SerializeField] private float focusTurnSpeed = 5f;
     [SerializeField] private float focusFOV = 42f;
+    [Tooltip("ONなら、敵の方へ「横方向だけ」向く。上下の角度（目線の高さ）は捕まる直前のまま変えない")]
+    [SerializeField] private bool focusYawOnly = true;
+    [Tooltip("Focus Yaw Only がONの時、捕まっている間に上下の角度を足す（度）。マイナスで上向き、プラスで下向き。0なら捕まる直前のまま")]
+    [SerializeField] private float focusPitchOffset = 0f;
 
     private Transform focusTarget;
+    private float focusStartPitch;
     private Vector3 focusOffset;
 
     /// <summary>
@@ -66,6 +71,9 @@ public class HorrorCameraFollow : MonoBehaviour
     {
         focusTarget = targetTransform;
         focusOffset = offset;
+
+        // 捕まる直前の上下の角度を覚えておく
+        focusStartPitch = Mathf.DeltaAngle(0f, transform.eulerAngles.x);
     }
 
     /// <summary>
@@ -86,7 +94,22 @@ public class HorrorCameraFollow : MonoBehaviour
         if (dir.sqrMagnitude < 0.0001f) return;
 
         // タイムスケールが0やスローでも、同じ速さで向く
-        Quaternion want = Quaternion.LookRotation(dir);
+        Quaternion want;
+        if (focusYawOnly)
+        {
+            // 横方向だけ敵へ向け、上下の角度は固定する（目線の高さが変わらない）
+            Vector3 flat = dir;
+            flat.y = 0f;
+            if (flat.sqrMagnitude < 0.0001f) return;
+
+            float yaw = Quaternion.LookRotation(flat).eulerAngles.y;
+            want = Quaternion.Euler(focusStartPitch + focusPitchOffset, yaw, 0f);
+        }
+        else
+        {
+            want = Quaternion.LookRotation(dir);
+        }
+
         transform.rotation = Quaternion.Slerp(
             transform.rotation,
             want,
@@ -106,7 +129,7 @@ public class HorrorCameraFollow : MonoBehaviour
     private float baseLightIntensity = 1f;
     private float flickerSeed;
 
-    /// <summary>現在の電池残量（0から1）</summary>
+    /// <summary>現在の電池残量（01）</summary>
     public float BatteryPercent01 => maxBattery > 0f ? Mathf.Clamp01(currentBattery / maxBattery) : 0f;
     public bool IsBatteryEmpty => currentBattery <= 0f;
 
@@ -326,8 +349,8 @@ public class HorrorCameraFollow : MonoBehaviour
             return;
         }
 
-        // 残量が少ないほど、明滅が速く激しくなる
-        float lowness = Mathf.InverseLerp(lowBatteryPercent, 0f, percent); // 0から1
+        // 残量が少ないほど、明滅が速く・激しくなる
+        float lowness = Mathf.InverseLerp(lowBatteryPercent, 0f, percent); // 01
         bool isCritical = percent <= criticalBatteryPercent;
 
         float flickerSpeed = Mathf.Lerp(6f, 22f, lowness);
@@ -359,7 +382,7 @@ public class HorrorCameraFollow : MonoBehaviour
     }
 
     /// <summary>
-    /// 最大電池量に対する割合（0から100）で回復する。
+    /// 最大電池量に対する割合（0100）で回復する。
     /// インベントリの電池アイテム（バッテリー(大)/(小)など）用。
     /// </summary>
     public void RechargeBatteryByPercent(float percent)

@@ -52,7 +52,7 @@ public class ShadowlopEnemyAI : MonoBehaviour
     [SerializeField] private float slowMotionDuration = 4.0f;
     [Tooltip("ONなら、攻撃アニメの進み具合で「ちょうどいいタイミング」を決める。OFFなら Slow Motion Duration の時間ぴったりで終わる")]
     [SerializeField] private bool syncToAttackAnimation = true;
-    [Tooltip("攻撃アニメがどこまで進んだらゲームオーバーにするか（0?1）。攻撃が当たる瞬間あたりに合わせる。0.6?0.8が目安")]
+    [Tooltip("攻撃アニメがどこまで進んだらゲームオーバーにするか（0から1）。攻撃が当たる瞬間あたりに合わせる。0.6?0.8が目安")]
     [SerializeField, Range(0.1f, 1f)] private float gameOverAtNormalizedTime = 0.7f;
     [Tooltip("攻撃が当たった瞬間から、ゲームオーバー画面を出すまでの間（秒・実時間）。余韻用")]
     [SerializeField] private float gameOverExtraDelay = 0.35f;
@@ -78,6 +78,7 @@ public class ShadowlopEnemyAI : MonoBehaviour
 
     private bool isCatching = false;
     private float defaultFixedDeltaTime;
+    private float defaultStoppingDistance;
 
     private static readonly int HashIsWalking = Animator.StringToHash("isWalking");
     private static readonly int HashIsChasing = Animator.StringToHash("isChasing");
@@ -89,6 +90,7 @@ public class ShadowlopEnemyAI : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+        defaultStoppingDistance = agent.stoppingDistance;
         currentHealth = maxHealth;
         defaultFixedDeltaTime = Time.fixedDeltaTime;
 
@@ -100,6 +102,10 @@ public class ShadowlopEnemyAI : MonoBehaviour
     void Start()
     {
         agent.speed = patrolSpeed;
+
+        // 旋回が遅いとプレイヤーの周りをぐるぐる回って攻撃範囲に入れないため、最低限の値を保証する
+        agent.angularSpeed = Mathf.Max(agent.angularSpeed, 480f);
+        agent.acceleration = Mathf.Max(agent.acceleration, 20f);
 
         // NavMesh上の最も近い点にワープさせて安全に配置
         if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 5f, NavMesh.AllAreas))
@@ -185,7 +191,7 @@ public class ShadowlopEnemyAI : MonoBehaviour
     {
         if (player == null) { ChangeState(State.Patrol); return; }
 
-        float dist = Vector3.Distance(transform.position, player.position);
+        float dist = FlatDistanceToPlayer();
 
         // 見失ったら巡回に戻る
         if (dist > loseSightRange)
@@ -204,6 +210,17 @@ public class ShadowlopEnemyAI : MonoBehaviour
         agent.SetDestination(player.position);
     }
 
+    /// <summary>
+    /// 高さ（Y）を無視した、プレイヤーまでの水平距離。
+    /// プレイヤーの原点が体の中心にある場合などで、高さの差のぶん距離が伸びるのを防ぐ。
+    /// </summary>
+    float FlatDistanceToPlayer()
+    {
+        Vector3 d = player.position - transform.position;
+        d.y = 0f;
+        return d.magnitude;
+    }
+
     // ---------------- Attack ----------------
     void TickAttack()
     {
@@ -219,7 +236,7 @@ public class ShadowlopEnemyAI : MonoBehaviour
             return;
         }
 
-        float dist = Vector3.Distance(transform.position, player.position);
+        float dist = FlatDistanceToPlayer();
 
         // 範囲外に出たら再追跡
         if (dist > attackRange * 1.2f)
@@ -244,6 +261,8 @@ public class ShadowlopEnemyAI : MonoBehaviour
     void PerformAttack()
     {
         // 捕まった瞬間：一時停止 → スローモーションで攻撃アニメ
+        Debug.Log($"[Shadowlop] PerformAttack 呼び出し（useCatchSequence={useCatchSequence}, isCatching={isCatching}）");
+
         if (useCatchSequence)
         {
             if (!isCatching) StartCoroutine(CatchSequence());
@@ -258,14 +277,17 @@ public class ShadowlopEnemyAI : MonoBehaviour
     IEnumerator CatchSequence()
     {
         isCatching = true;
+        Debug.Log("[Shadowlop] 捕獲演出 開始");
 
         // プレイヤーの操作を止める
         var playerMove = player.GetComponent<HorrorPlayerController>();
         if (playerMove != null) playerMove.enabled = false;
+        else Debug.LogWarning("[Shadowlop] Player に HorrorPlayerController が見つかりません（操作は止まりません）");
 
         // カメラを敵の方へ向ける
         var cam = FindObjectOfType<HorrorCameraFollow>();
         if (cam != null) cam.BeginFocus(transform, Vector3.up * focusHeight);
+        else Debug.LogWarning("[Shadowlop] HorrorCameraFollow が見つかりません（カメラは敵を向きません）");
 
         // 1. 一時停止
         SetTimeScale(0f);
@@ -308,6 +330,7 @@ public class ShadowlopEnemyAI : MonoBehaviour
         }
 
         // 3. 通常速度へ戻す
+        Debug.Log("[Shadowlop] スロー終了 → ゲームオーバー処理へ（onCatchFinished の登録数: " + onCatchFinished.GetPersistentEventCount() + "）");
         SetTimeScale(1f);
 
         // 4. ダメージ処理
@@ -402,12 +425,14 @@ public class ShadowlopEnemyAI : MonoBehaviour
         switch (newState)
         {
             case State.Idle:
+                agent.stoppingDistance = defaultStoppingDistance;
                 agent.isStopped = true;
                 animator.SetBool(HashIsChasing, false);
                 animator.SetBool(HashIsWalking, false);
                 break;
 
             case State.Patrol:
+                agent.stoppingDistance = defaultStoppingDistance;
                 agent.isStopped = false;
                 agent.speed = patrolSpeed;
                 animator.SetBool(HashIsChasing, false);
@@ -417,6 +442,8 @@ public class ShadowlopEnemyAI : MonoBehaviour
                 break;
 
             case State.Chase:
+                // 攻撃範囲の内側で止まるようにして、プレイヤーの周りを回り続けないようにする
+                agent.stoppingDistance = attackRange * 0.7f;
                 agent.isStopped = false;
                 agent.speed = chaseSpeed;
                 animator.SetBool(HashIsChasing, true);
