@@ -392,16 +392,20 @@ public class InventoryUI : MonoBehaviour
 
     private void UseBattery(ItemData item)
     {
-        if (flashlightController != null)
-        {
-            flashlightController.RechargeBatteryByPercent(item.batteryRechargePercent);
-            Debug.Log($"'{item.itemName}' を使用した。懐中電灯の電池を{item.batteryRechargePercent}%回復。");
-        }
-        else
+        if (flashlightController == null)
         {
             Debug.LogWarning("HorrorCameraFollow が見つからないため、電池の回復処理を行えません。");
+            return;
         }
 
+        // 電池が満タンなら使えない（アイテムは消費しない）
+        if (!flashlightController.RechargeCells(item.batteryRechargeCells))
+        {
+            Debug.Log("電池はすでに満タンのため、使用できない。");
+            return;
+        }
+
+        Debug.Log($"'{item.itemName}' を使用した。懐中電灯の電池を{item.batteryRechargeCells}マス回復。");
         RemoveItem(item);
     }
 

@@ -52,7 +52,7 @@ public class ShadowlopEnemyAI : MonoBehaviour
     [SerializeField] private float slowMotionDuration = 4.0f;
     [Tooltip("ONなら、攻撃アニメの進み具合で「ちょうどいいタイミング」を決める。OFFなら Slow Motion Duration の時間ぴったりで終わる")]
     [SerializeField] private bool syncToAttackAnimation = true;
-    [Tooltip("攻撃アニメがどこまで進んだらゲームオーバーにするか（0から1）。攻撃が当たる瞬間あたりに合わせる。0.6?0.8が目安")]
+    [Tooltip("攻撃アニメがどこまで進んだらゲームオーバーにするか（0から1）。攻撃が当たる瞬間あたりに合わせる。0.6から0.8が目安")]
     [SerializeField, Range(0.1f, 1f)] private float gameOverAtNormalizedTime = 0.7f;
     [Tooltip("攻撃が当たった瞬間から、ゲームオーバー画面を出すまでの間（秒・実時間）。余韻用")]
     [SerializeField] private float gameOverExtraDelay = 0.35f;

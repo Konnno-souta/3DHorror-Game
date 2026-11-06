@@ -19,7 +19,7 @@ public class GameOverScreen : MonoBehaviour
     [SerializeField] private CanvasGroup spot;
     [Tooltip("「GAME OVER」の見出し")]
     [SerializeField] private CanvasGroup titleGroup;
-    [Tooltip("「光が消えた。〜」のメッセージ")]
+    [Tooltip("「光が消えた。」で始まるメッセージ")]
     [SerializeField] private CanvasGroup messageGroup;
     [Tooltip("電池アイコンと 0%")]
     [SerializeField] private CanvasGroup batteryGroup;

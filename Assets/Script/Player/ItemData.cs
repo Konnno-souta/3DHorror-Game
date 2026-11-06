@@ -43,8 +43,8 @@ public class ItemData
     [Tooltip("ItemType = Consumable の時、使用すると回復するHP量")]
     public int healAmount = 20;
 
-    [Tooltip("ItemType = Battery の時、使用すると回復する懐中電灯の電池量（％、最大電池量に対する割合）")]
-    public float batteryRechargePercent = 50f;
+    [Tooltip("ItemType = Battery の時、使用すると回復する懐中電灯の電池のマス数（バッテリー(大)=2、バッテリー(小)=1）")]
+    public int batteryRechargeCells = 1;
 
     [Header("特殊効果")]
     [Tooltip("このアイテムを拾うと、懐中電灯が使用可能になる")]

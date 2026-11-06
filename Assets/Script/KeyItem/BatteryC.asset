@@ -20,5 +20,5 @@ MonoBehaviour:
     itemTag: BatteryC
     itemType: 4
     healAmount: 20
-    batteryRechargePercent: 25
+    batteryRechargeCells: 2
     unlocksFlashlight: 0

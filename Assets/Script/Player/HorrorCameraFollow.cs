@@ -116,22 +116,51 @@ public class HorrorCameraFollow : MonoBehaviour
             1f - Mathf.Exp(-focusTurnSpeed * Time.unscaledDeltaTime));
     }
 
-    [Header("懐中電灯 電池")]
-    [SerializeField] private float maxBattery = 100f;
-    [Tooltip("点灯中、1秒あたりに減る電池量")]
-    [SerializeField] private float batteryDrainPerSecond = 2f;
-    [Tooltip("この％を下回ると、緩やかに明滅し始める")]
-    [SerializeField] private float lowBatteryPercent = 25f;
-    [Tooltip("この％を下回ると、激しく明滅する")]
-    [SerializeField] private float criticalBatteryPercent = 10f;
+    [Header("懐中電灯 電池（3マス式）")]
+    [Tooltip("電池のマス数。ゲージの画像は3マス用")]
+    [SerializeField] private int maxCells = 3;
+    [Tooltip("点灯中、1マスが減るまでの時間（秒）。消灯中は減らない")]
+    [SerializeField] private float secondsPerCell = 40f;
 
-    private float currentBattery;
+    [Header("マスが減る時の点滅")]
+    [SerializeField] private int flickerCountMin = 2;
+    [SerializeField] private int flickerCountMax = 3;
+    [Tooltip("1回の点滅で、消えている時間（秒）")]
+    [SerializeField] private float flickerOffTime = 0.07f;
+    [Tooltip("1回の点滅で、点いている時間（秒）")]
+    [SerializeField] private float flickerOnTime = 0.11f;
+    [Tooltip("消えている間の明るさ（0で完全に消える）")]
+    [SerializeField, Range(0f, 0.3f)] private float flickerOffLevel = 0.03f;
+
+    [Header("マスが減るごとの明るさ")]
+    [Tooltip("1マス減るごとに暗くなる割合（0.2なら 100% → 80% → 60%）")]
+    [SerializeField, Range(0f, 0.5f)] private float dimPerLostCell = 0.2f;
+    [Tooltip("どれだけ減っても、これ以下にはならない明るさ")]
+    [SerializeField, Range(0f, 1f)] private float minBrightness = 0.25f;
+    [Tooltip("明るさが切り替わる速さ")]
+    [SerializeField] private float brightnessSmooth = 3f;
+
+    private int currentCells;
+    private float cellTimer;
     private float baseLightIntensity = 1f;
-    private float flickerSeed;
+    private float currentBrightness = 1f;
 
-    /// <summary>現在の電池残量（01）</summary>
-    public float BatteryPercent01 => maxBattery > 0f ? Mathf.Clamp01(currentBattery / maxBattery) : 0f;
-    public bool IsBatteryEmpty => currentBattery <= 0f;
+    // マスが減る直前の点滅の状態
+    private bool isFlickering;
+    private float flickerClock;
+    private int flickerCount;
+
+    /// <summary>現在の電池のマス数</summary>
+    public int CurrentCells => currentCells;
+    public int MaxCells => maxCells;
+
+    /// <summary>現在の電池残量（0から1）。マス数 ÷ 最大マス数</summary>
+    public float BatteryPercent01 => maxCells > 0 ? Mathf.Clamp01((float)currentCells / maxCells) : 0f;
+    public bool IsBatteryEmpty => currentCells <= 0;
+    public bool IsBatteryFull => currentCells >= maxCells;
+
+    /// <summary>マスが減る直前の点滅中かどうか（UI用）</summary>
+    public bool IsLosingCell => isFlickering;
 
 
     void Start()
@@ -159,8 +188,9 @@ public class HorrorCameraFollow : MonoBehaviour
         }
 
         // 電池初期化
-        currentBattery = maxBattery;
-        flickerSeed = Random.Range(0f, 100f);
+        currentCells = maxCells;
+        cellTimer = secondsPerCell;
+        currentBrightness = BrightnessForCells(currentCells);
 
         if (spotLight != null)
         {
@@ -300,6 +330,12 @@ public class HorrorCameraFollow : MonoBehaviour
             // ON/OFF切り替え
             isFlashlightOn = !isFlashlightOn;
 
+            // 消灯したら、点滅の途中状態は取り消す（ゲージが点滅し続けないように）
+            if (!isFlashlightOn)
+            {
+                isFlickering = false;
+            }
+
             // Light有効切替
             if (spotLight != null)
             {
@@ -309,20 +345,82 @@ public class HorrorCameraFollow : MonoBehaviour
     }
 
     /// <summary>
-    /// 電池の消費と、残量に応じたライトの明滅
+    /// 電池の消費。1マスの時間が尽きると、ライトが2回か3回点滅して、1マス減る。
+    /// マスが減るたびに、ライトは少しずつ暗くなる。
     /// </summary>
     private void UpdateBattery()
     {
         if (!isFlashlightUnlocked) return;
 
         // 点灯中だけ電池を消費する
-        if (isFlashlightOn && currentBattery > 0f)
+        if (isFlashlightOn && currentCells > 0)
         {
-            currentBattery = Mathf.Max(0f, currentBattery - batteryDrainPerSecond * Time.deltaTime);
+            if (isFlickering)
+            {
+                UpdateCellLossFlicker();
+            }
+            else
+            {
+                cellTimer -= Time.deltaTime;
+
+                if (cellTimer <= 0f)
+                {
+                    StartCellLossFlicker();
+                }
+            }
         }
 
-        // 電池切れになった瞬間、強制消灯
-        if (isFlashlightOn && currentBattery <= 0f)
+        ApplyLightBrightness();
+    }
+
+    /// <summary>マス数に応じた、基準の明るさ（1 → 暗くなっていく）</summary>
+    private float BrightnessForCells(int cells)
+    {
+        int lost = Mathf.Max(0, maxCells - cells);
+        return Mathf.Max(minBrightness, 1f - lost * dimPerLostCell);
+    }
+
+    private void StartCellLossFlicker()
+    {
+        isFlickering = true;
+        flickerClock = 0f;
+        flickerCount = Random.Range(flickerCountMin, flickerCountMax + 1);
+    }
+
+    private void UpdateCellLossFlicker()
+    {
+        flickerClock += Time.deltaTime;
+
+        float cycle = flickerOffTime + flickerOnTime;
+        int index = Mathf.FloorToInt(flickerClock / cycle);
+
+        // 指定回数の点滅が終わったら、1マス減らす
+        if (index >= flickerCount)
+        {
+            FinishCellLoss();
+        }
+    }
+
+    /// <summary>今が点滅中の「消えている瞬間」かどうか</summary>
+    private bool IsFlickerOffMoment()
+    {
+        if (!isFlickering) return false;
+
+        float cycle = flickerOffTime + flickerOnTime;
+        float inCycle = flickerClock % cycle;
+        return inCycle < flickerOffTime;
+    }
+
+    private void FinishCellLoss()
+    {
+        isFlickering = false;
+        currentCells = Mathf.Max(0, currentCells - 1);
+        cellTimer = secondsPerCell;
+
+        Debug.Log($"懐中電灯の電池が1マス減った。残り {currentCells}/{maxCells}");
+
+        // 電池切れ：強制消灯
+        if (currentCells <= 0)
         {
             isFlashlightOn = false;
 
@@ -332,62 +430,46 @@ public class HorrorCameraFollow : MonoBehaviour
             }
 
             Debug.Log("懐中電灯の電池が切れた。");
-            return;
-        }
-
-        if (!isFlashlightOn || spotLight == null || !spotLight.enabled)
-        {
-            return;
-        }
-
-        float percent = BatteryPercent01 * 100f;
-
-        if (percent > lowBatteryPercent)
-        {
-            // 残量十分：通常の明るさに戻す
-            spotLight.intensity = baseLightIntensity;
-            return;
-        }
-
-        // 残量が少ないほど、明滅が速く・激しくなる
-        float lowness = Mathf.InverseLerp(lowBatteryPercent, 0f, percent); // 01
-        bool isCritical = percent <= criticalBatteryPercent;
-
-        float flickerSpeed = Mathf.Lerp(6f, 22f, lowness);
-        float flickerAmount = Mathf.Lerp(0.15f, 0.8f, lowness);
-
-        float noise = Mathf.PerlinNoise(flickerSeed, Time.unscaledTime * flickerSpeed);
-        float flicker = 1f - flickerAmount * noise;
-
-        // 電池が尽きる直前は、たまに完全に落ちる瞬間を混ぜる
-        if (isCritical && Random.value < 0.02f)
-        {
-            flicker = 0f;
-        }
-
-        spotLight.intensity = baseLightIntensity * Mathf.Clamp01(flicker);
-    }
-
-    /// <summary>
-    /// アイテム（電池など）で懐中電灯の電池を回復する。
-    /// </summary>
-    public void RechargeBattery(float amount)
-    {
-        currentBattery = Mathf.Clamp(currentBattery + amount, 0f, maxBattery);
-
-        if (spotLight != null && isFlashlightOn)
-        {
-            spotLight.intensity = baseLightIntensity;
         }
     }
 
-    /// <summary>
-    /// 最大電池量に対する割合（0100）で回復する。
-    /// インベントリの電池アイテム（バッテリー(大)/(小)など）用。
-    /// </summary>
-    public void RechargeBatteryByPercent(float percent)
+    /// <summary>ライトの強さを、残りマス数と点滅の状態に合わせて反映する</summary>
+    private void ApplyLightBrightness()
     {
-        RechargeBattery(maxBattery * (percent / 100f));
+        if (spotLight == null || !spotLight.enabled) return;
+
+        // 基準の明るさへ、なめらかに近づける（マスが減った時、少しずつ暗くなる）
+        float target = BrightnessForCells(currentCells);
+        currentBrightness = Mathf.Lerp(
+            currentBrightness,
+            target,
+            1f - Mathf.Exp(-brightnessSmooth * Time.unscaledDeltaTime));
+
+        float level = IsFlickerOffMoment() ? flickerOffLevel : 1f;
+        spotLight.intensity = baseLightIntensity * currentBrightness * level;
+    }
+
+    /// <summary>
+    /// アイテム（電池など）で、電池のマスを回復する。
+    /// すでに満タンなら何もせず false を返す（アイテムを消費しないために使う）。
+    /// </summary>
+    public bool RechargeCells(int cells)
+    {
+        if (cells <= 0) return false;
+        if (IsBatteryFull) return false;
+
+        bool wasEmpty = IsBatteryEmpty;
+        currentCells = Mathf.Min(maxCells, currentCells + cells);
+
+        // 点滅中だった場合は取り消し、今のマスの時間を満タンに戻す
+        if (wasEmpty || isFlickering)
+        {
+            isFlickering = false;
+            cellTimer = secondsPerCell;
+        }
+
+        Debug.Log($"懐中電灯の電池が回復した。残り {currentCells}/{maxCells}");
+        return true;
     }
 
     /// <summary>

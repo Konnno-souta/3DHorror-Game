@@ -150,7 +150,7 @@ public class HorrorPlayerController : MonoBehaviour
             // スタミナ消費
             currentStamina -= staminaConsume * Time.deltaTime;
 
-            // 0～100に制限
+            // 0から100に制限
             currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
 
             // スタミナ切れ
