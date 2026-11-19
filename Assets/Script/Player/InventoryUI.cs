@@ -25,6 +25,9 @@ public class InventoryUI : MonoBehaviour
     [Header("説明")]
     [SerializeField] private TMP_Text descriptionText;
 
+    [Header("所持数の表示（任意。例：ITEMS 4 / 9）")]
+    [SerializeField] private TMP_Text itemCountText;
+
     [Header("3Dモデル表示位置")]
     [SerializeField] private Transform displayPoint;
 
@@ -82,6 +85,9 @@ public class InventoryUI : MonoBehaviour
     void Start()
     {
         inventoryPanel.SetActive(false);
+
+        // 行の初期表示（EMPTY、所持数）を整える
+        RefreshSlots();
 
         if (fullNoticePanel != null)
         {
@@ -275,6 +281,11 @@ public class InventoryUI : MonoBehaviour
                 slots[i].SetItem(items[i], this);
             else
                 slots[i].ClearSlot();
+        }
+
+        if (itemCountText != null)
+        {
+            itemCountText.text = $"ITEMS {items.Count} / {maxSlot}";
         }
     }
 

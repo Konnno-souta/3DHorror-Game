@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -30,10 +31,30 @@ public class InventorySlotUI :
     [Tooltip("ホバー中だけ表示する枠。子にImageを作り、slot_frame_hoverを割り当てて普段は非アクティブにしておく")]
     [SerializeField] private GameObject hoverFrame;
 
-    [Header("ホバー演出")]
+    [Header("ホバー演出（リスト式にする場合は Hover Scale を 1 にする）")]
     [SerializeField] private float hoverScale = 1.08f;
     [SerializeField] private float scaleLerpSpeed = 12f;
 
+    [Header("リスト式の行表示（任意。使わない項目は空のままでよい）")]
+    [Tooltip("行の番号（01、02...）。並び順から自動で入る")]
+    [SerializeField] private TMP_Text numberText;
+    [Tooltip("アイテム名")]
+    [SerializeField] private TMP_Text nameText;
+    [Tooltip("種類の表示（KEY、BATTERY、TOOL...）")]
+    [SerializeField] private TMP_Text typeText;
+    [Tooltip("空の行に出す文字（- EMPTY -）。空でない時は自動で隠れる")]
+    [SerializeField] private TMP_Text emptyText;
+    [Tooltip("選択中の行の、種類表示の後ろに付ける記号")]
+    [SerializeField] private string selectedSuffix = " <";
+
+    [Header("リスト式の文字色")]
+    [SerializeField] private Color normalTextColor = new Color(0.82f, 0.85f, 0.88f);
+    [SerializeField] private Color selectedTextColor = new Color(1f, 0.89f, 0.70f);
+    [SerializeField] private Color typeTextColor = new Color(0.58f, 0.63f, 0.67f);
+    [SerializeField] private Color selectedTypeColor = new Color(0.88f, 0.57f, 0.18f);
+    [SerializeField] private Color emptyTextColor = new Color(0.44f, 0.48f, 0.52f);
+
+    private bool isSelected = false;
     private ItemData currentItem;
     private InventoryUI inventoryUI;
     private bool isHovering = false;
@@ -51,6 +72,13 @@ public class InventorySlotUI :
         if (hoverFrame != null) hoverFrame.SetActive(false);
 
         ApplyEmptyBackground();
+
+        if (numberText != null)
+        {
+            numberText.text = (transform.GetSiblingIndex() + 1).ToString("00");
+        }
+
+        RefreshRowTexts();
     }
 
     void Update()
@@ -79,6 +107,7 @@ public class InventorySlotUI :
         iconImage.enabled = true;
 
         ApplyFilledBackground();
+        RefreshRowTexts();
     }
 
     /// <summary>
@@ -94,6 +123,62 @@ public class InventorySlotUI :
         }
         SetSelected(false);
         ApplyEmptyBackground();
+        RefreshRowTexts();
+    }
+
+    /// <summary>
+    /// リスト式の行の文字（名前、種類、EMPTY）と色を、今の状態に合わせて更新する。
+    /// 対応するTMP_Textが未設定の項目は、何もしない。
+    /// </summary>
+    private void RefreshRowTexts()
+    {
+        bool hasItem = currentItem != null;
+
+        if (nameText != null)
+        {
+            nameText.gameObject.SetActive(hasItem);
+            if (hasItem)
+            {
+                nameText.text = currentItem.itemName;
+                nameText.color = isSelected ? selectedTextColor : normalTextColor;
+            }
+        }
+
+        if (typeText != null)
+        {
+            typeText.gameObject.SetActive(hasItem);
+            if (hasItem)
+            {
+                typeText.text = TypeLabel(currentItem.itemType) + (isSelected ? selectedSuffix : "");
+                typeText.color = isSelected ? selectedTypeColor : typeTextColor;
+            }
+        }
+
+        if (numberText != null)
+        {
+            numberText.color = hasItem
+                ? (isSelected ? selectedTypeColor : typeTextColor)
+                : emptyTextColor;
+        }
+
+        if (emptyText != null)
+        {
+            emptyText.gameObject.SetActive(!hasItem);
+            emptyText.color = emptyTextColor;
+        }
+    }
+
+    private static string TypeLabel(ItemType type)
+    {
+        switch (type)
+        {
+            case ItemType.Key: return "KEY";
+            case ItemType.Battery: return "BATTERY";
+            case ItemType.Tool: return "TOOL";
+            case ItemType.Consumable: return "SUPPLY";
+            case ItemType.Document: return "MEMO";
+            default: return "ITEM";
+        }
     }
 
     private void ApplyFilledBackground()
@@ -117,10 +202,14 @@ public class InventorySlotUI :
     /// </summary>
     public void SetSelected(bool selected)
     {
+        isSelected = selected;
+
         if (selectedFrame != null)
         {
             selectedFrame.SetActive(selected);
         }
+
+        RefreshRowTexts();
     }
 
     public void OnPointerEnter(PointerEventData eventData)

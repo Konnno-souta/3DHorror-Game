@@ -184,6 +184,15 @@ MonoBehaviour:
   staminaUI: {fileID: 0}
   hideDelay: 2
   fadeSpeed: 3
+  greenColor: {r: 0.55, g: 0.85, b: 0.35, a: 1}
+  yellowColor: {r: 0.95, g: 0.78, b: 0.2, a: 1}
+  orangeColor: {r: 0.95, g: 0.5, b: 0.15, a: 1}
+  redColor: {r: 0.9, g: 0.2, b: 0.18, a: 1}
+  autoFitToFrame: 1
+  innerLeft: 36
+  innerRight: 988
+  innerBottom: 44
+  innerTop: 84
 --- !u!1 &913938372061095124
 GameObject:
   m_ObjectHideFlags: 0
