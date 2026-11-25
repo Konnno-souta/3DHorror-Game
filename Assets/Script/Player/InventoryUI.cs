@@ -451,8 +451,8 @@ public class InventoryUI : MonoBehaviour
     {
         if (item == null) return;
 
-        itemNameText.text = item.itemName;
-        descriptionText.text = item.description;
+        if (itemNameText != null) itemNameText.text = item.itemName;
+        if (descriptionText != null) descriptionText.text = item.description;
 
         if (currentDisplayObject != null)
         {
