@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Events;
 
 /// <summary>
@@ -46,13 +47,37 @@ public class KeyDoor : MonoBehaviour
     [Tooltip("開いている間は無効にする当たり判定。空なら、扉の板の中のColliderを自動で使う")]
     [SerializeField] private Collider[] leafColliders;
 
+    // ---------------- 敵 ----------------
+
+    [Header("敵(NavMeshAgent を持つキャラ)")]
+    [Tooltip("オンなら、敵が近づくと、扉を自動で開ける。通ったあとは、自動で閉まる")]
+    [SerializeField] private bool enemiesCanOpen = true;
+
+    [Tooltip("オンなら、鍵がかかっている扉も、敵は開けられる")]
+    [SerializeField] private bool enemiesOpenLockedDoors = false;
+
+    [Tooltip("閉まっている間、敵の経路をふさぐ(扉が開ききるまで、敵は手前で待つ)")]
+    [SerializeField] private bool blockEnemyPathWhenClosed = true;
+
+    [Tooltip("敵の位置を調べる間隔(秒)")]
+    [SerializeField] private float enemyCheckInterval = 0.15f;
+
+    // ---------------- 自動ドア(鍵なし) ----------------
+
+    [Header("自動ドア(鍵なし)")]
+    [Tooltip("オンなら、鍵なしで、近づくと自動で開き、離れると自動で閉まる。Eキーはいらない")]
+    [SerializeField] private bool autoDoor = false;
+
+    [Tooltip("近づいてから、開き始めるまでの秒数")]
+    [SerializeField] private float autoOpenDelay = 0f;
+
     // ---------------- 閉じる動き ----------------
 
     [Header("閉じる動き")]
     [Tooltip("オンなら、プレイヤーが扉から離れたあと、自動で閉まる")]
     [SerializeField] private bool autoClose = false;
 
-    [Tooltip("プレイヤーが範囲から出て、自動で閉まるまでの秒数")]
+    [Tooltip("プレイヤーが範囲から出て、自動で閉まるまでの秒数(自動ドアでも使う)")]
     [SerializeField] private float autoCloseDelay = 2f;
 
     [Tooltip("扉の通り道にプレイヤーがいる間は、閉めない(挟まれ防止)")]
@@ -152,6 +177,16 @@ public class KeyDoor : MonoBehaviour
     private Bounds closedBounds;
     private bool hasClosedBounds;
     private float autoCloseTimer = -1f;
+    private float autoOpenTimer;
+
+    private BoxCollider triggerBox;
+    private NavMeshAgent[] agents = new NavMeshAgent[0];
+    private float agentRefreshTimer;
+    private float enemyTimer;
+    private bool enemyInRange;
+    private bool closeAfterEnemy;
+    private GameObject navObstacleObject;
+    private NavMeshObstacle navObstacle;
 
     public bool IsLocked => isLocked;
     public bool IsOpen => isOpen;
@@ -162,6 +197,16 @@ public class KeyDoor : MonoBehaviour
     private void Awake()
     {
         isLocked = startLocked;
+        if (autoDoor) isLocked = false;
+
+        foreach (BoxCollider box in GetComponents<BoxCollider>())
+        {
+            if (box.isTrigger)
+            {
+                triggerBox = box;
+                break;
+            }
+        }
 
         if (doorLeaf != null)
         {
@@ -188,11 +233,45 @@ public class KeyDoor : MonoBehaviour
             {
                 leafColliders = doorLeaf.GetComponentsInChildren<Collider>(true);
             }
+
+            CreateNavObstacle();
         }
         else
         {
             Debug.LogWarning($"[KeyDoor] '{name}' に Door Leaf が設定されていません。");
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (navObstacleObject != null) Destroy(navObstacleObject);
+    }
+
+    /// <summary>
+    /// 閉まっている間だけ、敵の経路をふさぐ(NavMeshObstacle)。
+    /// 扉の板は動くので、板とは別のオブジェクトに付けて、閉じた位置に固定する。
+    /// 板をNavMeshの焼き込みから外しておくこと(Tools / Door / ドアをNavMeshの焼き込みから外す)。
+    /// </summary>
+    private void CreateNavObstacle()
+    {
+        if (!blockEnemyPathWhenClosed || !hasClosedBounds) return;
+
+        navObstacleObject = new GameObject("NavObstacle_" + name);
+        navObstacleObject.transform.position = closedBounds.center;
+        navObstacleObject.transform.rotation = Quaternion.identity;
+
+        navObstacle = navObstacleObject.AddComponent<NavMeshObstacle>();
+        navObstacle.shape = NavMeshObstacleShape.Box;
+        navObstacle.center = Vector3.zero;
+        navObstacle.size = closedBounds.size + new Vector3(0.2f, 0f, 0.2f);
+        navObstacle.carving = true;
+        navObstacle.carveOnlyStationary = true;
+        navObstacle.enabled = !isOpen;
+    }
+
+    private void SetNavObstacle(bool blocking)
+    {
+        if (navObstacle != null) navObstacle.enabled = blocking;
     }
 
     private void Start()
@@ -235,6 +314,8 @@ public class KeyDoor : MonoBehaviour
     private void Update()
     {
         UpdateDebugKeys();
+        UpdateEnemy();
+        UpdateAutoOpen();
         UpdateAutoClose();
 
         if (!playerInRange) return;
@@ -247,17 +328,39 @@ public class KeyDoor : MonoBehaviour
 
         if (isMoving) return;
 
+        // 自動ドアは、Eキーを使わない
+        if (autoDoor) return;
+
         if (Input.GetKeyDown(interactKey))
         {
             Interact();
         }
     }
 
+    /// <summary>
+    /// 自動ドア: プレイヤーが範囲にいて、扉が閉じていれば、開ける。
+    /// </summary>
+    private void UpdateAutoOpen()
+    {
+        if (!autoDoor || !playerInRange || isOpen || isMoving || isLocked)
+        {
+            autoOpenTimer = Mathf.Max(0f, autoOpenDelay);
+            return;
+        }
+
+        autoOpenTimer -= Time.deltaTime;
+        if (autoOpenTimer > 0f) return;
+
+        autoOpenTimer = Mathf.Max(0f, autoOpenDelay);
+        DebugLog("自動ドア: 近づいたので開ける");
+        Open();
+    }
+
     private void UpdateAutoClose()
     {
-        if (!autoClose || autoCloseTimer < 0f) return;
+        if (!(autoClose || autoDoor || closeAfterEnemy) || autoCloseTimer < 0f) return;
 
-        if (!isOpen || isMoving || playerInRange)
+        if (!isOpen || isMoving || playerInRange || enemyInRange)
         {
             autoCloseTimer = -1f;
             return;
@@ -277,6 +380,82 @@ public class KeyDoor : MonoBehaviour
         Close();
     }
 
+    // ---------------- 敵 ----------------
+
+    private void UpdateEnemy()
+    {
+        if (!enemiesCanOpen || triggerBox == null)
+        {
+            enemyInRange = false;
+            return;
+        }
+
+        enemyTimer -= Time.deltaTime;
+        if (enemyTimer > 0f) return;
+        enemyTimer = Mathf.Max(0.05f, enemyCheckInterval);
+
+        agentRefreshTimer -= enemyCheckInterval;
+        if (agentRefreshTimer <= 0f)
+        {
+            agentRefreshTimer = 1f;
+            agents = FindObjectsByType<NavMeshAgent>(FindObjectsSortMode.None);
+        }
+
+        bool found = IsAnyEnemyInZone();
+
+        // 敵が離れた: 閉める準備をする
+        if (enemyInRange && !found && isOpen && (autoClose || autoDoor || closeAfterEnemy))
+        {
+            autoCloseTimer = Mathf.Max(0f, autoCloseDelay);
+        }
+        enemyInRange = found;
+
+        if (!found || isOpen || isMoving) return;
+        if (isLocked && !enemiesOpenLockedDoors) return;
+        if (doorLeaf == null) return;
+
+        DebugLog("敵が近づいたので開ける");
+        closeAfterEnemy = true;
+        StartCoroutine(MoveRoutine(true));
+    }
+
+    /// <summary>
+    /// 近づく判定の箱(トリガー)の中に、NavMeshAgent を持つキャラがいるか。
+    /// (敵に Rigidbody や Collider がなくても、位置で調べられる)
+    /// </summary>
+    private bool IsAnyEnemyInZone()
+    {
+        Transform boxTransform = triggerBox.transform;
+        Vector3 half = triggerBox.size * 0.5f + new Vector3(0f, 0.5f, 0f);
+
+        foreach (NavMeshAgent agent in agents)
+        {
+            if (agent == null || !agent.enabled || !agent.gameObject.activeInHierarchy) continue;
+
+            Vector3 local = boxTransform.InverseTransformPoint(agent.transform.position) - triggerBox.center;
+            if (Mathf.Abs(local.x) <= half.x && Mathf.Abs(local.y) <= half.y && Mathf.Abs(local.z) <= half.z)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool IsAnyEnemyInDoorway()
+    {
+        if (!hasClosedBounds || !enemiesCanOpen) return false;
+
+        Bounds area = closedBounds;
+        area.Expand(Mathf.Max(0f, doorwayPadding) * 2f);
+
+        foreach (NavMeshAgent agent in agents)
+        {
+            if (agent == null || !agent.enabled || !agent.gameObject.activeInHierarchy) continue;
+            if (area.Contains(agent.transform.position + Vector3.up * 0.5f)) return true;
+        }
+        return false;
+    }
+
     /// <summary>
     /// 閉じた扉がある場所(通り道)に、プレイヤーがいるか。
     /// </summary>
@@ -292,7 +471,7 @@ public class KeyDoor : MonoBehaviour
         {
             if (c != null && IsPlayer(c)) return true;
         }
-        return false;
+        return IsAnyEnemyInDoorway();
     }
 
     private void Interact()
@@ -416,6 +595,7 @@ public class KeyDoor : MonoBehaviour
             // (開いたあとに板を非表示にしていると、見えない板が下りてくるだけになる)
             SetLeafVisible(true);
             SetLeafColliders(true);
+            SetNavObstacle(true);
             PlayClip(closeClip);
         }
 
@@ -440,13 +620,22 @@ public class KeyDoor : MonoBehaviour
 
         if (opening)
         {
+            // 開ききってから、敵の経路を開ける(板が下りたまま、すり抜けるのを防ぐ)
+            SetNavObstacle(false);
             if (hideLeafWhenOpen) SetLeafVisible(false);
             onOpened?.Invoke();
         }
         else
         {
             SetLeafColliders(true);
+            closeAfterEnemy = false;
             onClosed?.Invoke();
+        }
+
+        // 自動ドア: 開ききったとき、もうプレイヤーが離れていたら、閉める準備をする
+        if (autoDoor && opening && !playerInRange)
+        {
+            autoCloseTimer = Mathf.Max(0f, autoCloseDelay);
         }
 
         if (playerInRange) RefreshPrompt();
@@ -521,7 +710,7 @@ public class KeyDoor : MonoBehaviour
         DebugLog("プレイヤーが範囲から出た");
         HidePrompt();
 
-        if (autoClose && isOpen) autoCloseTimer = Mathf.Max(0f, autoCloseDelay);
+        if ((autoClose || autoDoor || closeAfterEnemy) && isOpen) autoCloseTimer = Mathf.Max(0f, autoCloseDelay);
     }
 
     private static bool IsPlayer(Collider other)
@@ -533,6 +722,13 @@ public class KeyDoor : MonoBehaviour
 
     private void RefreshPrompt()
     {
+        // 自動ドアは、「Eキーで開ける」を出さない
+        if (autoDoor)
+        {
+            HidePrompt();
+            return;
+        }
+
         if (!playerInRange || isMoving)
         {
             HidePrompt();

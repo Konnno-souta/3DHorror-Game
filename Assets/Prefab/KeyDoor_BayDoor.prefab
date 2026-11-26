@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3825789804486910211}
   - component: {fileID: 4359903277141302475}
   - component: {fileID: 4895520514570078332}
+  - component: {fileID: 4655378470372772166}
   m_Layer: 0
   m_Name: LP_Bay_Door_snaps
   m_TagString: Untagged
@@ -112,6 +113,26 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.2517902, y: 5.7053785, z: 4.9081035}
   m_Center: {x: 0.18666768, y: 2.350721, z: 3.0000765}
+--- !u!114 &4655378470372772166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4362644049657602924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e3fdca004f2d45fe8abbed571a8abd5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshModifier
+  m_SerializedVersion: 0
+  m_OverrideArea: 0
+  m_Area: 0
+  m_OverrideGenerateLinks: 0
+  m_GenerateLinks: 0
+  m_IgnoreFromBuild: 1
+  m_ApplyToChildren: 1
+  m_AffectedAgents: ffffffff
 --- !u!1 &4676725616134325227
 GameObject:
   m_ObjectHideFlags: 0
@@ -503,6 +524,17 @@ MonoBehaviour:
     m_RotationOrder: 4
   hideLeafWhenOpen: 1
   leafColliders: []
+  enemiesCanOpen: 1
+  enemiesOpenLockedDoors: 0
+  blockEnemyPathWhenClosed: 1
+  enemyCheckInterval: 0.15
+  autoDoor: 0
+  autoOpenDelay: 0
+  autoClose: 0
+  autoCloseDelay: 2
+  blockCloseWhilePlayerInDoorway: 1
+  doorwayPadding: 0.4
+  blockedCloseText: "\u901A\u308A\u629C\u3051\u3066\u304B\u3089\u9589\u3081\u3088\u3046"
   startLocked: 1
   requiredKeyTag: Key
   consumeKey: 1
