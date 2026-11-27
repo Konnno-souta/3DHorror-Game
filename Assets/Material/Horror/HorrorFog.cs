@@ -60,6 +60,12 @@ public class HorrorFog : MonoBehaviour
     [Tooltip("霧を出す高さ(床からの高さ)")]
     [SerializeField] private float mistHeight = 0.15f;
 
+    [Tooltip("足場の上にいる時も、霧を一番下の床にためる")]
+    [SerializeField] private bool mistStaysOnGround = true;
+
+    [Tooltip("下の床を探す深さ(m)")]
+    [SerializeField] private float mistSearchDepth = 20f;
+
     [Tooltip("カメラが、この距離より動いたら、霧の場所を動かす")]
     [SerializeField] private float followStep = 0.5f;
 
@@ -187,8 +193,9 @@ public class HorrorFog : MonoBehaviour
         Vector3 origin = followTarget.position + Vector3.up * 0.5f;
         float floorY = followTarget.position.y;
 
-        RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, 12f, ~0, QueryTriggerInteraction.Ignore);
+        RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, mistSearchDepth, ~0, QueryTriggerInteraction.Ignore);
         float nearest = float.MaxValue;
+        float lowest = float.MaxValue;
         foreach (RaycastHit hit in hits)
         {
             if (hit.collider.transform.IsChildOf(followTarget.root)) continue;
@@ -197,6 +204,14 @@ public class HorrorFog : MonoBehaviour
                 nearest = hit.distance;
                 floorY = hit.point.y;
             }
+            if (hit.point.y < lowest) lowest = hit.point.y;
+        }
+
+        // 足場(キャットウォークなど)の上にいる時も、霧は一番下の床にためる。
+        // (足場の高さに霧を出すと、下の階の上に、霧の板が浮いて見えるため)
+        if (mistStaysOnGround && lowest < float.MaxValue)
+        {
+            floorY = lowest;
         }
 
         Vector3 target = new Vector3(followTarget.position.x, floorY + mistHeight, followTarget.position.z);
