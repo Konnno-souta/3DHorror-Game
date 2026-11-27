@@ -475,7 +475,6 @@ public class ShadowlopEnemyAI : MonoBehaviour
     }
 
     // ---------------- 視界判定 ----------------
-    private float debugLogTimer = 0f;
 
     bool CanSeePlayer()
     {
@@ -484,33 +483,21 @@ public class ShadowlopEnemyAI : MonoBehaviour
         Vector3 toPlayer = player.position - transform.position;
         float dist = toPlayer.magnitude;
 
-        bool debugTick = false;
-        debugLogTimer += Time.deltaTime;
-        if (debugLogTimer >= 1f) { debugLogTimer = 0f; debugTick = true; }
+        // 遠すぎる
+        if (dist > sightRange) return false;
 
-        if (dist > sightRange)
-        {
-            if (debugTick) Debug.Log($"[Shadowlop] 検知失敗: 距離オーバー dist={dist:F1} > sightRange={sightRange}");
-            return false;
-        }
-
+        // 視野の外
         float angle = Vector3.Angle(transform.forward, toPlayer);
-        if (angle > sightAngle * 0.5f)
-        {
-            if (debugTick) Debug.Log($"[Shadowlop] 検知失敗: 視野角外 angle={angle:F1} > {sightAngle * 0.5f}");
-            return false;
-        }
+        if (angle > sightAngle * 0.5f) return false;
 
         // 障害物チェック（壁の裏にいたら見えない）
         // プレイヤー自身のコライダーに当たって誤検知しないよう、判定距離を少し短くする
         float raycastDist = Mathf.Max(0.1f, dist - 0.5f);
-        if (Physics.Raycast(transform.position + Vector3.up * 1.5f, toPlayer.normalized, out RaycastHit hit, raycastDist, obstacleMask))
+        if (Physics.Raycast(transform.position + Vector3.up * 1.5f, toPlayer.normalized, raycastDist, obstacleMask))
         {
-            if (debugTick) Debug.Log($"[Shadowlop] 検知失敗: 障害物に遮られている hit={hit.collider.name}");
             return false; // 何かに遮られている
         }
 
-        if (debugTick) Debug.Log($"[Shadowlop] 検知成功: dist={dist:F1}, angle={angle:F1}");
         return true;
     }
 
