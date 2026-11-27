@@ -1,0 +1,361 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea490390b5c364342a204a0ebefc3378, type: 3}
+  m_Name: SEBank
+  m_EditorClassIdentifier: Assembly-CSharp::SEBank
+  masterVolume: 0.9
+  seVolume: 1
+  bgmVolume: 0.5
+  footstepWalk:
+    clips:
+    - {fileID: 8300000, guid: 263f8aaa01d5d0041b082b7b69d9ca02, type: 3}
+    volume: 0.22
+    pitchMin: 0.9
+    pitchMax: 1.05
+    gains:
+    - 1
+  footstepRun:
+    clips:
+    - {fileID: 8300000, guid: 263f8aaa01d5d0041b082b7b69d9ca02, type: 3}
+    volume: 0.32
+    pitchMin: 1.05
+    pitchMax: 1.2
+    gains:
+    - 1
+  land:
+    clips:
+    - {fileID: 8300000, guid: 8e3d8ec9c012e5c44bdb7a67f07923b6, type: 3}
+    - {fileID: 8300000, guid: 205023e675b0246458ba2decf6d1c969, type: 3}
+    volume: 0.35
+    pitchMin: 0.95
+    pitchMax: 1.05
+    gains:
+    - 0.5526731
+    - 0.5416471
+  breathTired:
+    clips:
+    - {fileID: 8300000, guid: f100f7c4a754b9f4f8b7dafbc3371500, type: 3}
+    volume: 0.35
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 1
+  heartbeat:
+    clips:
+    - {fileID: 8300000, guid: 0d6b87aad1e21b84eaf680ef4cca8082, type: 3}
+    volume: 0.45
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 1
+  damage:
+    clips:
+    - {fileID: 8300000, guid: d8219dbf4fd3ebe45aed195de1fc03e4, type: 3}
+    - {fileID: 8300000, guid: c61e6851d29f26e43b6c463d49d6b6c9, type: 3}
+    - {fileID: 8300000, guid: eae85e43f7622314c821973e63461c96, type: 3}
+    volume: 0.7
+    pitchMin: 0.95
+    pitchMax: 1.05
+    gains:
+    - 0.5874873
+    - 0.5892617
+    - 0.6052992
+  death:
+    clips:
+    - {fileID: 8300000, guid: 26f23bd4e2cf9024daed9051ba07f478, type: 3}
+    volume: 0.8
+    pitchMin: 0.8
+    pitchMax: 0.85
+    gains:
+    - 1
+  heal:
+    clips:
+    - {fileID: 8300000, guid: 39713e09f889b874c9183d4f86a97504, type: 3}
+    volume: 0.4
+    pitchMin: 1
+    pitchMax: 1.05
+    gains:
+    - 0.666914
+  flashlightOn:
+    clips:
+    - {fileID: 8300000, guid: 2eb7c6ed0c8ac2244988d4a94fa46440, type: 3}
+    volume: 0.35
+    pitchMin: 0.97
+    pitchMax: 1.03
+    gains:
+    - 1
+  flashlightOff:
+    clips:
+    - {fileID: 8300000, guid: 3815de7e3cd44874183e79f7433073c4, type: 3}
+    volume: 0.35
+    pitchMin: 0.85
+    pitchMax: 0.95
+    gains:
+    - 1
+  flashlightEmpty:
+    clips:
+    - {fileID: 8300000, guid: b673e7d441bd26e438024a4b37545a58, type: 3}
+    volume: 0.3
+    pitchMin: 0.7
+    pitchMax: 0.75
+    gains:
+    - 1
+  batteryLosing:
+    clips:
+    - {fileID: 8300000, guid: 09dfb22d94ab9d349a1c9160ac763a13, type: 3}
+    - {fileID: 8300000, guid: 5936319382e80b2489e52cdbc8345723, type: 3}
+    volume: 0.25
+    pitchMin: 0.95
+    pitchMax: 1.05
+    gains:
+    - 0.69739634
+    - 1
+  batteryRecharge:
+    clips:
+    - {fileID: 8300000, guid: e2ca7ca70c78ea94f89ef8dcd8adb271, type: 3}
+    volume: 0.4
+    pitchMin: 1
+    pitchMax: 1.05
+    gains:
+    - 0.3488443
+  lightHum:
+    clips:
+    - {fileID: 8300000, guid: 5b7c436ece3901643a703153eba5f300, type: 3}
+    volume: 0.25
+    pitchMin: 0.97
+    pitchMax: 1.03
+    gains: []
+  lightFlicker:
+    clips:
+    - {fileID: 8300000, guid: e36feeaaeafe8cc4885b1c67f2b9b758, type: 3}
+    volume: 0.6
+    pitchMin: 0.95
+    pitchMax: 1.05
+    gains: []
+  lightSpark:
+    clips: []
+    volume: 0.6
+    pitchMin: 0.95
+    pitchMax: 1.05
+    gains: []
+  doorOpen:
+    clips:
+    - {fileID: 8300000, guid: 884f14c7bee413747bf056a284b93c8c, type: 3}
+    - {fileID: 8300000, guid: 83306c785d12cda49940c87f54bbb55f, type: 3}
+    volume: 0.55
+    pitchMin: 0.95
+    pitchMax: 1.05
+    gains:
+    - 1
+    - 1
+  doorClose:
+    clips:
+    - {fileID: 8300000, guid: fe09399052d94164d8a7b4d65bc8b3e7, type: 3}
+    - {fileID: 8300000, guid: 44dcc84b3b9ba6c42888fca10174fc3d, type: 3}
+    volume: 0.55
+    pitchMin: 0.95
+    pitchMax: 1.05
+    gains:
+    - 1
+    - 1
+  doorLocked:
+    clips:
+    - {fileID: 8300000, guid: c2de107bdc336b24daaec247bce1720b, type: 3}
+    volume: 0.45
+    pitchMin: 0.95
+    pitchMax: 1
+    gains:
+    - 1
+  doorUnlock:
+    clips:
+    - {fileID: 8300000, guid: 6b92ddcc3aaebf94bb63796e77b80ad5, type: 3}
+    volume: 0.5
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 0.45451027
+  pickup:
+    clips:
+    - {fileID: 8300000, guid: 1e3761a252fe9dd4b901f7a02288e469, type: 3}
+    - {fileID: 8300000, guid: d18ac92eae1b5e84f9204c5d60a59bd0, type: 3}
+    volume: 0.45
+    pitchMin: 0.95
+    pitchMax: 1.05
+    gains:
+    - 1
+    - 1
+  inventoryOpen:
+    clips:
+    - {fileID: 8300000, guid: 3d687eba0876fb048b30a9c76d7fb281, type: 3}
+    volume: 0.3
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 1
+  inventoryClose:
+    clips:
+    - {fileID: 8300000, guid: 5afc06f8d453e834681d0963ef7777d6, type: 3}
+    volume: 0.3
+    pitchMin: 0.95
+    pitchMax: 0.95
+    gains:
+    - 0.8684862
+  inventoryMove:
+    clips:
+    - {fileID: 8300000, guid: 8e59027361ba5794f978f708a72ee232, type: 3}
+    - {fileID: 8300000, guid: ef1e2eeead28f5c4c8d683ae19e7d256, type: 3}
+    volume: 0.18
+    pitchMin: 1
+    pitchMax: 1.05
+    gains:
+    - 1
+    - 1
+  inventoryUse:
+    clips:
+    - {fileID: 8300000, guid: 6b92ddcc3aaebf94bb63796e77b80ad5, type: 3}
+    volume: 0.4
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 0.45451027
+  enemyStep:
+    clips:
+    - {fileID: 8300000, guid: 263f8aaa01d5d0041b082b7b69d9ca02, type: 3}
+    volume: 0.55
+    pitchMin: 0.6
+    pitchMax: 0.75
+    gains:
+    - 1
+  enemyIdle:
+    clips:
+    - {fileID: 8300000, guid: 2d57cf141828eb740be917bb76e04204, type: 3}
+    - {fileID: 8300000, guid: 885d93b2dd9f8e1478c4b18d122f61bc, type: 3}
+    - {fileID: 8300000, guid: 3b899a29c0d809c47a717024074bf604, type: 3}
+    - {fileID: 8300000, guid: a8e4cd463c7c9ab4cb05df630b5e5090, type: 3}
+    volume: 0.55
+    pitchMin: 0.8
+    pitchMax: 0.95
+    gains:
+    - 0.5507274
+    - 0.6152657
+    - 0.5292477
+    - 0.42577517
+  enemyChase:
+    clips:
+    - {fileID: 8300000, guid: 058cf30891c4b7c4488143ae65eed789, type: 3}
+    - {fileID: 8300000, guid: 3c7e8198fdeece14f8fb2235af5b4115, type: 3}
+    volume: 0.8
+    pitchMin: 0.85
+    pitchMax: 0.95
+    gains:
+    - 1
+    - 1
+  enemyAttack:
+    clips:
+    - {fileID: 8300000, guid: 3c7e8198fdeece14f8fb2235af5b4115, type: 3}
+    volume: 0.85
+    pitchMin: 0.9
+    pitchMax: 1
+    gains:
+    - 1
+  enemyHurt:
+    clips:
+    - {fileID: 8300000, guid: 584f0181e2919b349864296ac31342cd, type: 3}
+    - {fileID: 8300000, guid: 21d13d0ed1193b34081526610ec87dde, type: 3}
+    - {fileID: 8300000, guid: 6223a913f02f9de4b96af195a85de235, type: 3}
+    - {fileID: 8300000, guid: 4411c968d85eb154095f396a6f655ad8, type: 3}
+    volume: 0.7
+    pitchMin: 0.9
+    pitchMax: 1
+    gains:
+    - 1
+    - 1
+    - 1
+    - 1
+  enemyDeath:
+    clips:
+    - {fileID: 8300000, guid: 584f0181e2919b349864296ac31342cd, type: 3}
+    - {fileID: 8300000, guid: 21d13d0ed1193b34081526610ec87dde, type: 3}
+    volume: 0.8
+    pitchMin: 0.8
+    pitchMax: 0.85
+    gains:
+    - 1
+    - 1
+  uiHover:
+    clips:
+    - {fileID: 8300000, guid: 2115843a81880934d9256590a25a2959, type: 3}
+    volume: 0.15
+    pitchMin: 0.98
+    pitchMax: 1.02
+    gains:
+    - 1
+  uiClick:
+    clips:
+    - {fileID: 8300000, guid: 3ed720408864025498b387cc8889328f, type: 3}
+    volume: 0.35
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 1
+  gameStart:
+    clips:
+    - {fileID: 8300000, guid: 3b719a99b539aa44f87eb8f72e426204, type: 3}
+    volume: 0.6
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 0.9484927
+  stinger:
+    clips:
+    - {fileID: 8300000, guid: 3b719a99b539aa44f87eb8f72e426204, type: 3}
+    volume: 0.55
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 0.9484927
+  gameOver:
+    clips:
+    - {fileID: 8300000, guid: 3910da1350bb75247aa0dfda2e49e822, type: 3}
+    volume: 0.7
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 1
+  bgmTitle:
+    clips:
+    - {fileID: 8300000, guid: cb51151625f6a0b468b42b63d43755d8, type: 3}
+    volume: 0.45
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 1
+  bgmGame:
+    clips:
+    - {fileID: 8300000, guid: 1e0db01d83165b6489f7cabc218c849e, type: 3}
+    volume: 0.25
+    pitchMin: 1
+    pitchMax: 1
+    gains:
+    - 1
+  bgmChase:
+    clips: []
+    volume: 0.45
+    pitchMin: 1
+    pitchMax: 1
+    gains: []
+  ambientRoom:
+    clips: []
+    volume: 0.5
+    pitchMin: 1
+    pitchMax: 1
+    gains: []

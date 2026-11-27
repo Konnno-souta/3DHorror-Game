@@ -95,11 +95,21 @@ public class LightCuller : MonoBehaviour
             if (l.type == LightType.Directional) continue;
             if (viewer != null && l.transform.IsChildOf(viewer)) continue;
             if (player != null && l.transform.IsChildOf(player.transform)) continue;
+            // インベントリの3D表示など、別のカメラ用の電灯はさわらない
+            if (l.GetComponentInParent<Camera>() != null) continue;
+            // ふつうの物(Default レイヤー)を照らさない、特別な電灯もさわらない
+            if ((l.cullingMask & 1) == 0) continue;
             lights.Add(l);
         }
 
-        // もう一覧にない電灯は、忘れる
-        culledByMe.RemoveWhere(l => l == null);
+        // 一覧から外れた電灯で、自分が消していた物は元にもどす
+        culledByMe.RemoveWhere(l =>
+        {
+            if (l == null) return true;
+            if (lights.Contains(l)) return false;
+            l.enabled = true;
+            return true;
+        });
     }
 
     private void OnDisable()

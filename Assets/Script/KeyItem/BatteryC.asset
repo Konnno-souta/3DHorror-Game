@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemDatabase
   allItems:
   - itemName: "\u30D0\u30C3\u30C6\u30EA\u30FC(\u5927)"
-    description: "\u4E8C\u3064\u306E\u30E1\u30E2\u30EA\u30FC\u56DE\u5FA9\u304C\u51FA\u6765\u308B"
+    description: "\u5927\u304D\u3081\u306E\u30D0\u30C3\u30C6\u30EA\u30FC\u3002\u305A\u3063\u3057\u308A\u3068\u91CD\u3044\u3002\n\u4F7F\u3046\u3068\u3001\u61D0\u4E2D\u96FB\u706F\u306E\u96FB\u6C60\u304C
+      <color=#8FD16A>2\u30DE\u30B9</color> \u56DE\u5FA9\u3059\u308B\u3002\n<color=#9A9A9A>\u3044\u3056\u3068\u3044\u3046\u6642\u306E\u305F\u3081\u306B\u3001\u53D6\u3063\u3066\u304A\u304F\u306E\u3082\u3044\u3044\u3002</color>"
     icon: {fileID: 21300000, guid: d15102e1826bf5b428bb87eb66a9daef, type: 3}
     displayPrefab: {fileID: 3019161775642865684, guid: 2d6867d6e54753f449d2768e3269e3a9, type: 3}
     itemTag: BatteryC
