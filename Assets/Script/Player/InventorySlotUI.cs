@@ -212,28 +212,41 @@ public class InventorySlotUI :
         RefreshRowTexts();
     }
 
-    public void OnPointerEnter(PointerEventData eventData)
+    /// <summary>
+    /// 枠(ホバー枠)を付けたり消したりする。マウスでも、上下キーでも、ここを通る。
+    /// </summary>
+    public void SetHover(bool on)
     {
-        isHovering = true;
+        isHovering = on;
 
         if (hoverFrame != null)
         {
-            hoverFrame.SetActive(true);
+            hoverFrame.SetActive(on);
         }
+    }
 
-        if (currentItem != null && inventoryUI != null)
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        // 空の行は inventoryUI が入っていないので、Instance も見る
+        InventoryUI ui = inventoryUI != null ? inventoryUI : InventoryUI.Instance;
+
+        if (ui != null)
         {
-            inventoryUI.ShowItemDetail(currentItem);
+            // カーソルをこの行に合わせる(枠と、詳しい表示は InventoryUI がそろえる)
+            ui.OnSlotPointerEnter(this);
+        }
+        else
+        {
+            SetHover(true);
         }
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        isHovering = false;
-
-        if (hoverFrame != null)
+        // 上下キーでも選べるので、マウスが外れても、枠は残す(カーソルの位置を見失わないため)
+        if (inventoryUI == null && InventoryUI.Instance == null)
         {
-            hoverFrame.SetActive(false);
+            SetHover(false);
         }
     }
 

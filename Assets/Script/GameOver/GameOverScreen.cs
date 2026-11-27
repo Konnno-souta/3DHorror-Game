@@ -188,7 +188,13 @@ public class GameOverScreen : MonoBehaviour
     {
         Time.timeScale = 1f;
         Time.fixedDeltaTime = 0.02f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+
+        // 2回押されないように、ボタンを押せなくする
+        if (retryButton != null) retryButton.interactable = false;
+        if (titleButton != null) titleButton.interactable = false;
+
+        // タイトルからのスタートと同じ、ロード画面をはさんで、同じシーンを最初から読みこみなおす
+        LoadingScreen.Load(SceneManager.GetActiveScene().name);
     }
 
     public void GoTitle()

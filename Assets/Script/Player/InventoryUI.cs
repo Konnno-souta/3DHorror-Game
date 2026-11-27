@@ -47,6 +47,22 @@ public class InventoryUI : MonoBehaviour
     [Header("使用キー")]
     [SerializeField] private KeyCode useKey = KeyCode.Return;
 
+    [Header("キーボードで選ぶ(上下キー)")]
+    [SerializeField] private KeyCode upKey = KeyCode.UpArrow;
+    [SerializeField] private KeyCode downKey = KeyCode.DownArrow;
+    [Tooltip("上下キーと同じ動きをする、別のキー(使わないなら None)")]
+    [SerializeField] private KeyCode altUpKey = KeyCode.W;
+    [SerializeField] private KeyCode altDownKey = KeyCode.S;
+    [Tooltip("一番下で下を押すと、一番上にもどる(上も同じ)")]
+    [SerializeField] private bool wrapAround = true;
+    [Tooltip("押したままにすると、この秒数のあと、続けて動き始める")]
+    [SerializeField] private float repeatDelay = 0.35f;
+    [Tooltip("押したままのとき、1行ずつ動く間隔(秒)")]
+    [SerializeField] private float repeatInterval = 0.09f;
+    [Tooltip("下の操作説明の文字(任意)。入れると、上下キーの説明も出す")]
+    [SerializeField] private TMP_Text controlsHintText;
+    [SerializeField] private string controlsHint = "[ 上下キー ] 選ぶ   [ ENTER / 左クリック ] 使う   [ TAB ] 閉じる";
+
     [Header("プレイヤー体力（回復アイテム用、任意・未設定なら自動検索）")]
     [SerializeField] private PlayerHealth playerHealth;
 
@@ -69,6 +85,11 @@ public class InventoryUI : MonoBehaviour
     private ItemData selectedItem;
     private InventorySlotUI selectedSlotUI;
     private Coroutine fullNoticeCoroutine;
+
+    // キーボードのカーソル(今、枠が付いている行)
+    private int cursorIndex = -1;
+    private int heldDirection = 0;
+    private float nextRepeatTime = 0f;
 
     public ItemData SelectedItem => selectedItem;
 
@@ -108,6 +129,11 @@ public class InventoryUI : MonoBehaviour
         {
             itemDisplayCamera.enabled = false;
         }
+
+        if (controlsHintText != null && !string.IsNullOrEmpty(controlsHint))
+        {
+            controlsHintText.text = controlsHint;
+        }
     }
 
     private void Update()
@@ -138,10 +164,167 @@ public class InventoryUI : MonoBehaviour
             ToggleInventory();
         }
 
-        // インベントリを開いている間、選択中アイテムを使用
-        if (isOpen && Input.GetKeyDown(useKey))
+        if (!isOpen) return;
+
+        // 上下キーで、行を選ぶ
+        UpdateCursorKeys();
+
+        // インベントリを開いている間、カーソルの行のアイテムを使用
+        if (Input.GetKeyDown(useKey) || Input.GetKeyDown(KeyCode.KeypadEnter))
         {
-            UseSelectedItem();
+            UseCursorItem();
+        }
+    }
+
+    // ---------------- 上下キーで選ぶ ----------------
+
+    private InventorySlotUI[] GetSlots()
+    {
+        return slotParent.GetComponentsInChildren<InventorySlotUI>(true);
+    }
+
+    /// <summary>
+    /// 上下キー。押した瞬間に1行動き、押したままなら、少し待ってから続けて動く。
+    /// インベントリを開いている間は Time.timeScale = 0 なので、unscaledTime を使う。
+    /// </summary>
+    private void UpdateCursorKeys()
+    {
+        bool upDown = Input.GetKeyDown(upKey) || (altUpKey != KeyCode.None && Input.GetKeyDown(altUpKey));
+        bool downDown = Input.GetKeyDown(downKey) || (altDownKey != KeyCode.None && Input.GetKeyDown(altDownKey));
+        bool upHeld = Input.GetKey(upKey) || (altUpKey != KeyCode.None && Input.GetKey(altUpKey));
+        bool downHeld = Input.GetKey(downKey) || (altDownKey != KeyCode.None && Input.GetKey(altDownKey));
+
+        if (upDown)
+        {
+            MoveCursor(-1);
+            heldDirection = -1;
+            nextRepeatTime = Time.unscaledTime + repeatDelay;
+            return;
+        }
+
+        if (downDown)
+        {
+            MoveCursor(1);
+            heldDirection = 1;
+            nextRepeatTime = Time.unscaledTime + repeatDelay;
+            return;
+        }
+
+        bool stillHeld = (heldDirection < 0 && upHeld) || (heldDirection > 0 && downHeld);
+        if (!stillHeld)
+        {
+            heldDirection = 0;
+            return;
+        }
+
+        if (Time.unscaledTime >= nextRepeatTime)
+        {
+            MoveCursor(heldDirection);
+            nextRepeatTime = Time.unscaledTime + repeatInterval;
+        }
+    }
+
+    private void MoveCursor(int direction)
+    {
+        InventorySlotUI[] slots = GetSlots();
+        if (slots.Length == 0) return;
+
+        int next = cursorIndex < 0 ? 0 : cursorIndex + direction;
+
+        if (wrapAround)
+        {
+            next = (next % slots.Length + slots.Length) % slots.Length;
+        }
+        else
+        {
+            next = Mathf.Clamp(next, 0, slots.Length - 1);
+        }
+
+        SetCursor(next);
+    }
+
+    /// <summary>
+    /// index の行に、枠を付ける(ほかの行の枠は消す)。アイテムがあれば、詳しい表示も出す。
+    /// </summary>
+    private void SetCursor(int index)
+    {
+        InventorySlotUI[] slots = GetSlots();
+        if (slots.Length == 0) return;
+
+        index = Mathf.Clamp(index, 0, slots.Length - 1);
+        cursorIndex = index;
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            slots[i].SetHover(i == index);
+        }
+
+        ItemData item = slots[index].CurrentItem;
+        if (item != null)
+        {
+            ShowItemDetail(item);
+        }
+        else
+        {
+            ShowEmptyDetail();
+        }
+    }
+
+    private void ClearCursor()
+    {
+        foreach (InventorySlotUI slot in GetSlots())
+        {
+            slot.SetHover(false);
+        }
+        cursorIndex = -1;
+        heldDirection = 0;
+    }
+
+    /// <summary>
+    /// マウスが行に乗ったとき、InventorySlotUI から呼ばれる。カーソルを、その行に合わせる。
+    /// </summary>
+    public void OnSlotPointerEnter(InventorySlotUI slot)
+    {
+        if (!isOpen) return;
+
+        InventorySlotUI[] slots = GetSlots();
+        int index = System.Array.IndexOf(slots, slot);
+        if (index >= 0 && index != cursorIndex)
+        {
+            SetCursor(index);
+        }
+    }
+
+    /// <summary>
+    /// Enter で、カーソルの行のアイテムを選んで使う。
+    /// </summary>
+    private void UseCursorItem()
+    {
+        InventorySlotUI[] slots = GetSlots();
+
+        if (cursorIndex >= 0 && cursorIndex < slots.Length)
+        {
+            InventorySlotUI slot = slots[cursorIndex];
+            if (slot.CurrentItem == null) return;
+
+            SelectSlot(slot, slot.CurrentItem);
+        }
+
+        UseSelectedItem();
+    }
+
+    /// <summary>
+    /// 空の行にカーソルがあるときの表示。
+    /// </summary>
+    private void ShowEmptyDetail()
+    {
+        if (itemNameText != null) itemNameText.text = "- EMPTY -";
+        if (descriptionText != null) descriptionText.text = "";
+
+        if (currentDisplayObject != null)
+        {
+            Destroy(currentDisplayObject);
+            currentDisplayObject = null;
         }
     }
 
@@ -209,10 +392,8 @@ public class InventoryUI : MonoBehaviour
             Cursor.visible = true;
             Time.timeScale = 0f;
 
-            if (items.Count > 0)
-            {
-                ShowItemDetail(items[0]);
-            }
+            // 開いたら、一番上の行にカーソルを置く
+            SetCursor(0);
         }
         else
         {
@@ -222,6 +403,7 @@ public class InventoryUI : MonoBehaviour
 
             // 閉じたら選択状態・3Dプレビューを後片付けする
             ClearSelection();
+            ClearCursor();
 
             if (currentDisplayObject != null)
             {
@@ -254,7 +436,6 @@ public class InventoryUI : MonoBehaviour
     public void RemoveItem(ItemData item)
     {
         items.Remove(item);
-        RefreshSlots();
 
         if (selectedItem == item)
         {
@@ -266,6 +447,9 @@ public class InventoryUI : MonoBehaviour
                 currentDisplayObject = null;
             }
         }
+
+        // 片付けてから行を更新する(カーソルの行の表示を、最後に出しなおすため)
+        RefreshSlots();
     }
 
     /// <summary>
@@ -286,6 +470,12 @@ public class InventoryUI : MonoBehaviour
         if (itemCountText != null)
         {
             itemCountText.text = $"ITEMS {items.Count} / {maxSlot}";
+        }
+
+        // アイテムを使って行がつまったとき、カーソルの枠と表示を合わせなおす
+        if (isOpen && cursorIndex >= 0)
+        {
+            SetCursor(cursorIndex);
         }
     }
 
