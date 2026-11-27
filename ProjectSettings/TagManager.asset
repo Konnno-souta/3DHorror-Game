@@ -11,6 +11,9 @@ TagManager:
   - BatteryC
   - Light
   - Flashlight
+  - RedCard
+  - BlueCard
+  - YellowCard
   layers:
   - Default
   - TransparentFX

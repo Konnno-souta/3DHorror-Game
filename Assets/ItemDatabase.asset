@@ -20,7 +20,7 @@ MonoBehaviour:
     itemTag: 
     itemType: 0
     healAmount: 0
-    batteryRechargePercent: 0
+    batteryRechargeCells: 1
     unlocksFlashlight: 0
   - itemName: 
     description: 
@@ -29,5 +29,32 @@ MonoBehaviour:
     itemTag: 
     itemType: 0
     healAmount: 0
-    batteryRechargePercent: 0
+    batteryRechargeCells: 1
+    unlocksFlashlight: 0
+  - itemName: "\u8D64\u306E\u30AB\u30FC\u30C9\u30AD\u30FC"
+    description: "\u8D64\u3044\u30E9\u30A4\u30F3\u306E\u5165\u3063\u305F\u3001\u8077\u54E1\u7528\u306E\u30AB\u30FC\u30C9\u30AD\u30FC\u3002\n\u8D64\u3044\u67A0\u306E\u30AB\u30FC\u30C9\u30EA\u30FC\u30C0\u30FC\u306E\u6249\u3092\u958B\u3051\u3089\u308C\u308B\u3002\n\u8868\u9762\u306B\u3001\u4E7E\u3044\u305F\u8840\u304C\u3053\u3073\u308A\u3064\u3044\u3066\u3044\u308B\u3002"
+    icon: {fileID: 21300000, guid: a705628a6e10e174abae13dd22ab16b8, type: 3}
+    displayPrefab: {fileID: 5030051018335545982, guid: 56a8db884b592f34aba975949eb32511, type: 3}
+    itemTag: RedCard
+    itemType: 1
+    healAmount: 0
+    batteryRechargeCells: 1
+    unlocksFlashlight: 0
+  - itemName: "\u9752\u306E\u30AB\u30FC\u30C9\u30AD\u30FC"
+    description: "\u9752\u3044\u30E9\u30A4\u30F3\u306E\u5165\u3063\u305F\u3001\u7BA1\u7406\u533A\u753B\u306E\u30AB\u30FC\u30C9\u30AD\u30FC\u3002\n\u9752\u3044\u67A0\u306E\u30AB\u30FC\u30C9\u30EA\u30FC\u30C0\u30FC\u306E\u6249\u3092\u958B\u3051\u3089\u308C\u308B\u3002\n\u88CF\u306B\u3001\u8AB0\u304B\u306E\u540D\u524D\u304C\u524A\u3089\u308C\u305F\u8DE1\u304C\u3042\u308B\u3002"
+    icon: {fileID: 21300000, guid: e1ae446bdd4ceb7419079edf6045493c, type: 3}
+    displayPrefab: {fileID: 345597432390513192, guid: 975872c01dc2b8042819745789e8c216, type: 3}
+    itemTag: BlueCard
+    itemType: 1
+    healAmount: 0
+    batteryRechargeCells: 1
+    unlocksFlashlight: 0
+  - itemName: "\u9EC4\u306E\u30AB\u30FC\u30C9\u30AD\u30FC"
+    description: "\u9EC4\u8272\u3044\u30E9\u30A4\u30F3\u306E\u5165\u3063\u305F\u3001\u8B66\u5099\u7528\u306E\u30AB\u30FC\u30C9\u30AD\u30FC\u3002\n\u9EC4\u8272\u3044\u67A0\u306E\u30AB\u30FC\u30C9\u30EA\u30FC\u30C0\u30FC\u306E\u6249\u3092\u958B\u3051\u3089\u308C\u308B\u3002\n\u3072\u3073\u304C\u5165\u3063\u3066\u3044\u308B\u304C\u3001\u307E\u3060\u4F7F\u3048\u305D\u3046\u3060\u3002"
+    icon: {fileID: 21300000, guid: 63de2555a2f76af41aca687250bc9c19, type: 3}
+    displayPrefab: {fileID: 4814671155030476102, guid: 7ec3579ebbb627947a23273c1e3be95f, type: 3}
+    itemTag: YellowCard
+    itemType: 1
+    healAmount: 0
+    batteryRechargeCells: 1
     unlocksFlashlight: 0

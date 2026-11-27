@@ -68,6 +68,9 @@ public class KeyDoor : MonoBehaviour
     [Tooltip("オンなら、鍵なしで、近づくと自動で開き、離れると自動で閉まる。Eキーはいらない")]
     [SerializeField] private bool autoDoor = false;
 
+    [Tooltip("オンなら、自動ドアでも鍵はかかったまま。鍵(カードキー)で開けたあとから、自動ドアになる")]
+    [SerializeField] private bool autoDoorAfterUnlock = false;
+
     [Tooltip("近づいてから、開き始めるまでの秒数")]
     [SerializeField] private float autoOpenDelay = 0f;
 
@@ -93,6 +96,9 @@ public class KeyDoor : MonoBehaviour
     [Header("鍵")]
     [Tooltip("オンなら、最初は鍵がかかっている")]
     [SerializeField] private bool startLocked = true;
+
+    [Tooltip("オンなら、ゲームが始まったときから開いている(鍵もかかっていない)")]
+    [SerializeField] private bool startOpen = false;
 
     [Tooltip("必要な鍵のTag(ItemDataの Item Tag と同じにする)")]
     [SerializeField] private string requiredKeyTag = "Key";
@@ -189,6 +195,9 @@ public class KeyDoor : MonoBehaviour
     private NavMeshObstacle navObstacle;
 
     public bool IsLocked => isLocked;
+
+    /// <summary>今、自動ドアとして動いているか(鍵がかかっている間は、動かない)。</summary>
+    private bool AutoDoorActive => autoDoor && !isLocked;
     public bool IsOpen => isOpen;
     public string RequiredKeyTag => requiredKeyTag;
 
@@ -197,7 +206,7 @@ public class KeyDoor : MonoBehaviour
     private void Awake()
     {
         isLocked = startLocked;
-        if (autoDoor) isLocked = false;
+        if (autoDoor && !autoDoorAfterUnlock) isLocked = false;
 
         foreach (BoxCollider box in GetComponents<BoxCollider>())
         {
@@ -278,6 +287,27 @@ public class KeyDoor : MonoBehaviour
     {
         FindPromptIfNeeded();
         HidePrompt();
+
+        if (startOpen)
+        {
+            SnapOpen();
+        }
+    }
+
+    /// <summary>
+    /// 動かさずに、すぐ開いた状態にする(最初から開いている扉用)。
+    /// </summary>
+    private void SnapOpen()
+    {
+        if (doorLeaf == null) return;
+
+        isLocked = false;
+        SetLeafColliders(false);
+        Apply(1f);
+        isOpen = true;
+        isMoving = false;
+        SetNavObstacle(false);
+        if (hideLeafWhenOpen) SetLeafVisible(false);
     }
 
     private void OnDisable()
@@ -328,8 +358,8 @@ public class KeyDoor : MonoBehaviour
 
         if (isMoving) return;
 
-        // 自動ドアは、Eキーを使わない
-        if (autoDoor) return;
+        // 自動ドアは、Eキーを使わない(鍵がかかっている間は、Eで鍵を使える)
+        if (AutoDoorActive) return;
 
         if (Input.GetKeyDown(interactKey))
         {
@@ -723,7 +753,7 @@ public class KeyDoor : MonoBehaviour
     private void RefreshPrompt()
     {
         // 自動ドアは、「Eキーで開ける」を出さない
-        if (autoDoor)
+        if (AutoDoorActive)
         {
             HidePrompt();
             return;
